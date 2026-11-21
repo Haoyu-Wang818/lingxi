@@ -57,6 +57,13 @@ data class GatewayHealth(
     val model: String? = null,
 )
 
+/** `/v1/chat` 响应。 */
+data class ChatReply(
+    val text: String,
+    val model: String,
+    val latencyMs: Long,
+)
+
 /**
  * 云端网关客户端 [FR-GW-01]、[FR-GW-02]。
  *
@@ -72,4 +79,11 @@ interface GatewayApi {
 
     /** 健康检查，返回网关版本与大模型是否已配置。 */
     suspend fun health(): Result<GatewayHealth>
+
+    /** 通用对话（答疑与 `InferenceRouter` 的云端路线）[FR-GW-03]。 */
+    suspend fun chat(
+        system: String,
+        user: String,
+        maxTokens: Int = 512,
+    ): Result<ChatReply>
 }
