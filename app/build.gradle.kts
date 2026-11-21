@@ -37,6 +37,17 @@ dependencies {
     implementation(project(":core:review"))
     implementation(project(":context-engine"))
     implementation(project(":core:sync"))
+    implementation(project(":sync-datalayer"))
+
+    // 功能模块（骨架阶段只有占位页面，原型页面仍在 app 内，逐步迁移）。
+    implementation(project(":feature:today"))
+    implementation(project(":feature:review"))
+    implementation(project(":feature:capture"))
+    implementation(project(":feature:note"))
+    implementation(project(":feature:graph"))
+    implementation(project(":feature:course"))
+    implementation(project(":feature:context"))
+    implementation(project(":feature:settings"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

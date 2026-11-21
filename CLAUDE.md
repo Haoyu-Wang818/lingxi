@@ -17,6 +17,21 @@
 | `core:review` | Kotlin/JVM | FSRS 间隔重复算法 |
 | `context-engine` | Kotlin/JVM | 可学习时刻判断 `LearnableMomentDetector` |
 | `core:sync` | Kotlin/JVM | 手机与手表通信：消息 `WatchMessage`、链路接口 `WatchLink`、主备双链路、中继客户端 |
+| `core:quality` | Kotlin/JVM | 卡片与手表版本规则校验 `CardValidator`、知识关系校验 `RelationValidator` |
+| `core:data` | Android | 数据库与仓库层：`CardRepository`、`KnowledgeRepository`、待办任务队列 |
+| `core:network` | Android | 网关客户端 `GatewayApi`、错误映射 `GatewayError` |
+| `core:ondevice` | Android | 端侧模型：OCR、语音识别引擎及模型文件加载 |
+| `core:notify` | Android | 复习通知 `ReviewNotifier`、通知渠道 |
+| `core:designsystem` | Android | 主题 `LingxiTheme`、配色字号、卡片组件 |
+| `sync-datalayer` | Android | `DataLayerWatchLink`：Wear Data Layer 主链路，唯一依赖 Play 服务的模块 |
+| `feature:today` | Android | 「今日」首页 |
+| `feature:review` | Android | 卡片复习页 |
+| `feature:capture` | Android | 拍照、相册导入、录音 |
+| `feature:note` | Android | 笔记列表与详情 |
+| `feature:graph` | Android | 知识图谱可视化 |
+| `feature:course` | Android | 课程与课表管理 |
+| `feature:context` | Android | 情境信号采集、推送决策、情境实验室 |
+| `feature:settings` | Android | 隐私、推送、导出、引导、手表配对 |
 | `app` | Android | 手机端 Compose 界面 |
 | `wear` | Android (Wear OS) | 手表端 |
 | `server` | Python FastAPI | 云端网关，托管 API Key |
@@ -28,7 +43,7 @@
 - 业务代码调用模型一律通过 `InferenceRouter`，不得直接调用某个 `ModelBackend`。
 - 手机端不得持有大模型 API Key，云端调用只走 `server` 网关。
 - 国行手机（华为、OPPO 等）通常没有 Google 服务：禁止引入 ML Kit、Firebase。手表通信一律通过 `WatchLink`，
-  Wear Data Layer（依赖 Play Services）只能作为可选的主链路实现，放在独立模块里，缺失时自动走中继。
+  初赛手表同步以 Wear Data Layer 为主链路，只能出现在 `sync-datalayer` 模块，缺失 Play 服务时自动走中继（见 ADR 0007）。
 
 ## 编码规范
 

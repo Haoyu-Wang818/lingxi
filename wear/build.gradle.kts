@@ -35,6 +35,7 @@ android {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:sync"))
+    implementation(project(":sync-datalayer"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.compose.bom))

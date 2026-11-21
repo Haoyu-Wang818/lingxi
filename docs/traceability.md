@@ -6,81 +6,81 @@
 
 | 需求 | 简述 | 优先级 | 迭代 | 设计 | 代码 | 测试 |
 | --- | --- | --- | --- | --- | --- | --- |
-| FR-COURSE-01 | 用户可新建、编辑、删除课程（名称、教师、颜色） | M | I1 | — | — | — |
-| FR-COURSE-02 | 用户可为课程录入上课时间（星期、节次或起止时间、周次范围、地点） | M | I1 | — | — | — |
+| FR-COURSE-01 | 用户可新建、编辑、删除课程（名称、教师、颜色） | M | I1 | `docs/02-design/03-database.md` | `feature/course/src/main/kotlin/com/lingxi/feature/course/CourseScreen.kt` | — |
+| FR-COURSE-02 | 用户可为课程录入上课时间（星期、节次或起止时间、周次范围、地点） | M | I1 | `docs/02-design/03-database.md` | `feature/course/src/main/kotlin/com/lingxi/feature/course/CourseScreen.kt` | — |
 | FR-COURSE-03 | 系统根据当前时间判断「正在上的课」，捕获时自动预选 | M | I1 | — | — | — |
 | FR-COURSE-04 | 支持从 CSV 文件导入课表 | C | 复赛 | — | — | — |
-| FR-CAP-01 | 应用内拍照（CameraX），一次捕获可连续拍多张 | M | I2 | — | — | — |
+| FR-CAP-01 | 应用内拍照（CameraX），一次捕获可连续拍多张 | M | I2 | `docs/02-design/03-database.md`<br>`docs/02-design/05-ui.md` | `feature/capture/src/main/kotlin/com/lingxi/feature/capture/CaptureFlowScreen.kt` | — |
 | FR-CAP-02 | 自动检测文档边缘并做透视矫正，可手动调整四角 | S | I2 | — | — | — |
 | FR-CAP-03 | 从系统相册导入图片 | M | I2 | — | — | — |
-| FR-CAP-04 | 前台服务录音，显示时长，可暂停、继续、停止 | M | I4 | — | — | — |
+| FR-CAP-04 | 前台服务录音，显示时长，可暂停、继续、停止 | M | I4 | — | `feature/capture/src/main/kotlin/com/lingxi/feature/capture/CaptureFlowScreen.kt` | — |
 | FR-CAP-05 | 导入 PDF 课件并逐页渲染为图片进入识别 | C | 复赛 | — | — | — |
-| FR-CAP-06 | 每次捕获归档到课程和课次，保存原始文件路径 | M | I2 | — | — | — |
-| FR-NOTE-01 | 端侧 OCR（PaddleOCR 转 ONNX）识别中英文与常见数学符号 | M | I2 | — | — | — |
-| FR-NOTE-02 | 端侧离线语音转写（sherpa-onnx），带时间戳分段 | M | I4 | — | — | — |
-| FR-NOTE-03 | 合并同一课次的识别文本，经网关生成结构化笔记（标题、要点、公式、例题） | M | I2 | — | — | — |
-| FR-NOTE-04 | 笔记可查看、编辑，保留识别原文供对照 | M | I2 | — | — | — |
-| FR-NOTE-05 | 笔记每个要点记录来源（照片编号与区域、录音时间段） | S | I4 | — | — | — |
-| FR-NOTE-06 | 整理失败的笔记标记为「待整理」，可手动重试 | M | I2 | — | — | — |
-| FR-KG-01 | 从笔记抽取知识点（名称、摘要）与关系（先修、组成、示例、相关） | M | I2 | — | — | — |
-| FR-KG-02 | 新知识点与已有知识点去重合并（名称归一化 + 向量相似度） | M | I4 | — | — | — |
-| FR-KG-03 | 关系写入前校验：无自环、端点存在、先修关系无环 | M | I4 | — | — | — |
-| FR-KG-04 | 图谱可视化：力导向布局、缩放、拖动、按课程筛选 | M | I4 | — | — | — |
-| FR-KG-05 | 节点颜色映射掌握程度（由记忆状态计算） | S | I4 | — | — | — |
-| FR-KG-06 | 节点详情：摘要、相关卡片、来源笔记，可跳转原始素材 | S | I4 | — | — | — |
+| FR-CAP-06 | 每次捕获归档到课程和课次，保存原始文件路径 | M | I2 | `docs/02-design/03-database.md` | — | — |
+| FR-NOTE-01 | 端侧 OCR（PaddleOCR 转 ONNX）识别中英文与常见数学符号 | M | I2 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md`<br>`docs/02-design/04-api.md`<br>`docs/02-design/06-detailed-design.md` | `core/ondevice/src/main/kotlin/com/lingxi/core/ondevice/OnDeviceEngines.kt` | — |
+| FR-NOTE-02 | 端侧离线语音转写（sherpa-onnx），带时间戳分段 | M | I4 | — | `core/ondevice/src/main/kotlin/com/lingxi/core/ondevice/OnDeviceEngines.kt` | — |
+| FR-NOTE-03 | 合并同一课次的识别文本，经网关生成结构化笔记（标题、要点、公式、例题） | M | I2 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md`<br>`docs/02-design/04-api.md`<br>`docs/02-design/05-ui.md` | `feature/note/src/main/kotlin/com/lingxi/feature/note/NoteListScreen.kt` | — |
+| FR-NOTE-04 | 笔记可查看、编辑，保留识别原文供对照 | M | I2 | `docs/02-design/05-ui.md` | — | — |
+| FR-NOTE-05 | 笔记每个要点记录来源（照片编号与区域、录音时间段） | S | I4 | `docs/02-design/03-database.md` | `core/model/src/main/kotlin/com/lingxi/core/model/Review.kt`<br>`core/ondevice/src/main/kotlin/com/lingxi/core/ondevice/OnDeviceEngines.kt`<br>`feature/note/src/main/kotlin/com/lingxi/feature/note/NoteListScreen.kt` | — |
+| FR-NOTE-06 | 整理失败的笔记标记为「待整理」，可手动重试 | M | I2 | `docs/02-design/03-database.md` | — | — |
+| FR-KG-01 | 从笔记抽取知识点（名称、摘要）与关系（先修、组成、示例、相关） | M | I2 | `docs/02-design/03-database.md`<br>`docs/02-design/04-api.md` | `core/model/src/main/kotlin/com/lingxi/core/model/Extraction.kt`<br>`core/network/src/main/kotlin/com/lingxi/core/network/GatewayApi.kt` | — |
+| FR-KG-02 | 新知识点与已有知识点去重合并（名称归一化 + 向量相似度） | M | I4 | `docs/02-design/04-api.md`<br>`docs/02-design/06-detailed-design.md` | `core/data/src/main/kotlin/com/lingxi/core/data/KnowledgeRepository.kt`<br>`core/model/src/main/kotlin/com/lingxi/core/model/Extraction.kt`<br>`core/network/src/main/kotlin/com/lingxi/core/network/GatewayApi.kt` | — |
+| FR-KG-03 | 关系写入前校验：无自环、端点存在、先修关系无环 | M | I4 | `docs/02-design/01-architecture.md`<br>`docs/02-design/06-detailed-design.md` | `core/data/src/main/kotlin/com/lingxi/core/data/KnowledgeRepository.kt`<br>`core/model/src/main/kotlin/com/lingxi/core/model/Extraction.kt`<br>`core/quality/src/main/kotlin/com/lingxi/core/quality/RelationValidator.kt` | — |
+| FR-KG-04 | 图谱可视化：力导向布局、缩放、拖动、按课程筛选 | M | I4 | `docs/02-design/01-architecture.md`<br>`docs/02-design/05-ui.md` | `core/data/src/main/kotlin/com/lingxi/core/data/KnowledgeRepository.kt`<br>`feature/graph/src/main/kotlin/com/lingxi/feature/graph/KnowledgeGraphScreen.kt` | — |
+| FR-KG-05 | 节点颜色映射掌握程度（由记忆状态计算） | S | I4 | — | `feature/graph/src/main/kotlin/com/lingxi/feature/graph/KnowledgeGraphScreen.kt` | — |
+| FR-KG-06 | 节点详情：摘要、相关卡片、来源笔记，可跳转原始素材 | S | I4 | `docs/02-design/03-database.md` | — | — |
 | FR-KG-07 | 用户可手动合并、拆分、重命名知识点 | C | 复赛 | — | — | — |
-| FR-REV-01 | 为每个新知识点生成 2–3 张卡片，至少 1 张为手表题型（判断、单选） | M | I2 | — | — | — |
-| FR-REV-02 | FSRS 调度：按自评更新稳定度、难度和下次复习时间 | M | I3 | — | — | — |
-| FR-REV-03 | 每日到期队列，支持每日新卡与复习上限 | M | I3 | — | — | — |
-| FR-REV-04 | 手机复习页：看题、翻面、四级自评、撤销上一步 | M | I3 | — | — | — |
+| FR-REV-01 | 为每个新知识点生成 2–3 张卡片，至少 1 张为手表题型（判断、单选） | M | I2 | `docs/02-design/03-database.md`<br>`docs/02-design/04-api.md` | `core/network/src/main/kotlin/com/lingxi/core/network/GatewayApi.kt` | — |
+| FR-REV-02 | FSRS 调度：按自评更新稳定度、难度和下次复习时间 | M | I3 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md` | `core/review/src/main/kotlin/com/lingxi/core/review/Scheduler.kt` | — |
+| FR-REV-03 | 每日到期队列，支持每日新卡与复习上限 | M | I3 | `docs/02-design/03-database.md`<br>`docs/02-design/06-detailed-design.md` | `core/data/src/main/kotlin/com/lingxi/core/data/CardRepository.kt` | — |
+| FR-REV-04 | 手机复习页：看题、翻面、四级自评、撤销上一步 | M | I3 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md`<br>`docs/02-design/05-ui.md`<br>`docs/02-design/06-detailed-design.md` | `core/data/src/main/kotlin/com/lingxi/core/data/CardRepository.kt`<br>`feature/review/src/main/kotlin/com/lingxi/feature/review/ReviewDeckScreen.kt` | — |
 | FR-REV-05 | 记录每次复习日志（时间、评分、反应时长、设备） | M | I3 | — | — | — |
-| FR-REV-06 | 结合反应时长修正难度（个性化记忆模型） | C | 复赛 | — | — | — |
-| FR-REV-07 | 卡片式交互：一屏一卡，先回忆后轻点翻面；三键自评「忘了 / 模糊 / 记得」对应 AGAIN / HARD / GOOD，上滑为「太简单」EASY，左滑 = 忘了、右滑 = 记得；按钮上显示 FSRS 预测的下次间隔 | M | I3 | — | — | — |
-| FR-REV-08 | 「今日」首页：新卡数、待复习数、预计用时、进度、连续学习天数 | M | I3 | — | — | — |
-| FR-REV-09 | 学习统计与克制的激励：连续天数（每周 1 张冻结卡）、日历热力图、每门课掌握度、组末小结；不做积分商城和排行榜 | S | I3 | — | — | — |
-| FR-REV-10 | 卡片质量保障：每张卡片绑定来源；生成后按规则校验（题干长度、答案唯一、干扰项不重复、与知识点相关）；用户可纠错、编辑、删除 | M | I2 | — | — | — |
+| FR-REV-06 | 结合反应时长修正难度（个性化记忆模型） | C | 复赛 | `docs/02-design/03-database.md` | — | — |
+| FR-REV-07 | 卡片式交互：一屏一卡，先回忆后轻点翻面；三键自评「忘了 / 模糊 / 记得」对应 AGAIN / HARD / GOOD，上滑为「太简单」EASY，左滑 = 忘了、右滑 = 记得；按钮上显示 FSRS 预测的下次间隔 | M | I3 | `docs/02-design/06-detailed-design.md` | `core/data/src/main/kotlin/com/lingxi/core/data/CardRepository.kt`<br>`core/review/src/main/kotlin/com/lingxi/core/review/Scheduler.kt`<br>`feature/review/src/main/kotlin/com/lingxi/feature/review/ReviewDeckScreen.kt` | — |
+| FR-REV-08 | 「今日」首页：新卡数、待复习数、预计用时、进度、连续学习天数 | M | I3 | `docs/02-design/01-architecture.md`<br>`docs/02-design/05-ui.md` | `feature/today/src/main/kotlin/com/lingxi/feature/today/TodayScreen.kt` | — |
+| FR-REV-09 | 学习统计与克制的激励：连续天数（每周 1 张冻结卡）、日历热力图、每门课掌握度、组末小结；不做积分商城和排行榜 | S | I3 | `docs/02-design/03-database.md` | `feature/today/src/main/kotlin/com/lingxi/feature/today/TodayScreen.kt` | — |
+| FR-REV-10 | 卡片质量保障：每张卡片绑定来源；生成后按规则校验（题干长度、答案唯一、干扰项不重复、与知识点相关）；用户可纠错、编辑、删除 | M | I2 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md`<br>`docs/02-design/05-ui.md`<br>`docs/02-design/06-detailed-design.md` | `core/model/src/main/kotlin/com/lingxi/core/model/Review.kt`<br>`core/network/src/main/kotlin/com/lingxi/core/network/GatewayApi.kt`<br>`core/quality/src/main/kotlin/com/lingxi/core/quality/CardValidator.kt`<br>`core/quality/src/main/kotlin/com/lingxi/core/quality/Violation.kt` | — |
 | FR-REV-11 | 多题型：问答、挖空填空、判断、单选 | M | I2 | — | — | — |
-| FR-REV-12 | 碎片模式：从推送进入时只出 3–5 张，60 秒内可完成 | S | I3 | — | — | — |
-| FR-REV-13 | 客观题自动判分：判断、单选答对 = GOOD、答错 = AGAIN，答对后可改为「其实是蒙的」HARD | M | I3 | — | — | — |
-| FR-REV-14 | 短组推进：每组 5–8 张，组内答「忘了」的卡组末再出一次，同日重复不重复计分；新卡先展示再测验 | S | I3 | — | — | — |
-| FR-REV-15 | 图谱感知排序：到期卡积压超过 50 张时先排前置知识点，前置点答「忘了」则顺延依赖它的卡 | S | I3 | — | — | — |
-| FR-REV-16 | 考前模式：录入考试日期后提高该课程目标保持率（0.90 → 0.95），提前考试后才到期的卡 | C | 复赛 | — | — | — |
-| FR-WEAR-01 | Wear OS 手表显示卡片，判断题两键、二选一作答 | S | I5 | — | — | — |
-| FR-WEAR-02 | 卡片到达时轻震，显示推送依据摘要（一行） | M | I5 | — | — | — |
-| FR-WEAR-03 | 作答结果与反应时长回传手机，手机更新记忆状态 | S | I5 | — | — | — |
-| FR-WEAR-04 | 链路断开时手表暂存作答，恢复后补发，手机按消息 id 去重 | S | I5 | — | — | — |
-| FR-WEAR-05 | 复习推送以手机通知为主通道，通知含题目摘要，点击进入碎片模式；配对的任何手表自动镜像显示 | M | I5 | — | — | — |
-| FR-WEAR-08 | 小屏内容规范：卡片生成时同时产出手表版本 watchPrompt（≤ 20 字）与 watchAnswer（≤ 12 字），校验不过置空、不推手表；手表只用两键（AGAIN / GOOD）；忽略或「稍后」不写入 FSRS | M | I5 | — | — | — |
+| FR-REV-12 | 碎片模式：从推送进入时只出 3–5 张，60 秒内可完成 | S | I3 | `docs/02-design/01-architecture.md` | `core/notify/src/main/kotlin/com/lingxi/core/notify/ReviewNotifier.kt` | — |
+| FR-REV-13 | 客观题自动判分：判断、单选答对 = GOOD、答错 = AGAIN，答对后可改为「其实是蒙的」HARD | M | I3 | `docs/02-design/06-detailed-design.md` | `feature/review/src/main/kotlin/com/lingxi/feature/review/ReviewDeckScreen.kt` | — |
+| FR-REV-14 | 短组推进：每组 5–8 张，组内答「忘了」的卡组末再出一次，同日重复不重复计分；新卡先展示再测验 | S | I3 | `docs/02-design/06-detailed-design.md` | `core/data/src/main/kotlin/com/lingxi/core/data/CardRepository.kt`<br>`feature/review/src/main/kotlin/com/lingxi/feature/review/ReviewDeckScreen.kt` | — |
+| FR-REV-15 | 图谱感知排序：到期卡积压超过 50 张时先排前置知识点，前置点答「忘了」则顺延依赖它的卡 | S | I3 | `docs/02-design/03-database.md`<br>`docs/02-design/06-detailed-design.md` | `core/data/src/main/kotlin/com/lingxi/core/data/KnowledgeRepository.kt` | — |
+| FR-REV-16 | 考前模式：录入考试日期后提高该课程目标保持率（0.90 → 0.95），提前考试后才到期的卡 | C | 复赛 | `docs/02-design/03-database.md`<br>`docs/02-design/06-detailed-design.md` | — | — |
+| FR-WEAR-01 | Wear OS 手表显示卡片，判断题两键、二选一作答 | S | I5 | `docs/02-design/01-architecture.md`<br>`docs/02-design/04-api.md`<br>`docs/02-design/05-ui.md` | — | — |
+| FR-WEAR-02 | 卡片到达时轻震，显示推送依据摘要（一行） | M | I5 | `docs/02-design/06-detailed-design.md` | — | — |
+| FR-WEAR-03 | 作答结果与反应时长回传手机，手机更新记忆状态 | S | I5 | `docs/02-design/03-database.md`<br>`docs/02-design/04-api.md` | `core/data/src/main/kotlin/com/lingxi/core/data/CardRepository.kt` | — |
+| FR-WEAR-04 | 链路断开时手表暂存作答，恢复后补发，手机按消息 id 去重 | S | I5 | `docs/02-design/03-database.md`<br>`docs/02-design/04-api.md` | — | — |
+| FR-WEAR-05 | 复习推送以手机通知为主通道，通知含题目摘要，点击进入碎片模式；配对的任何手表自动镜像显示 | M | I5 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md` | `core/notify/src/main/kotlin/com/lingxi/core/notify/ReviewNotifier.kt` | — |
+| FR-WEAR-08 | 小屏内容规范：卡片生成时同时产出手表版本 watchPrompt（≤ 20 字）与 watchAnswer（≤ 12 字），校验不过置空、不推手表；手表只用两键（AGAIN / GOOD）；忽略或「稍后」不写入 FSRS | M | I5 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md`<br>`docs/02-design/04-api.md`<br>`docs/02-design/06-detailed-design.md` | `core/model/src/main/kotlin/com/lingxi/core/model/Review.kt`<br>`core/quality/src/main/kotlin/com/lingxi/core/quality/CardValidator.kt`<br>`core/quality/src/main/kotlin/com/lingxi/core/quality/Violation.kt` | — |
 | FR-WEAR-06 | 华为 GT 5 轻穿戴应用经 Wear Engine 收卡片、回传作答 | C | 复赛 | — | — | — |
-| FR-WEAR-07 | 手表采集心率与活动状态并发送给手机 | S | I5 | — | — | — |
-| FR-SYNC-01 | 手机与手表通过 6 位配对码经网关中继配对 | M | I5 | — | — | — |
-| FR-SYNC-02 | 链路探测与主备切换：按 Data Layer → Wear Engine → 中继 → 通知镜像优先级选择 | M | I5 | — | — | — |
-| FR-SYNC-03 | 消息带版本号、消息 id、时间戳，支持 ACK 与超时重传 | M | I5 | — | — | — |
+| FR-WEAR-07 | 手表采集心率与活动状态并发送给手机 | S | I5 | `docs/02-design/04-api.md` | — | — |
+| FR-SYNC-01 | 手机与手表配对：有 Play 服务时使用系统配对（Wear Data Layer）；中继模式使用 6 位配对码 | M | I5 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md` | `feature/settings/src/main/kotlin/com/lingxi/feature/settings/SettingsScreen.kt` | — |
+| FR-SYNC-02 | 链路探测与主备切换：初赛以 Wear Data Layer 为主链路、网关中继为备链路，通知镜像兜底；复赛可增加 Wear Engine | M | I5 | `docs/02-design/01-architecture.md`<br>`docs/02-design/04-api.md` | `sync-datalayer/src/main/kotlin/com/lingxi/sync/datalayer/DataLayerWatchLink.kt` | — |
+| FR-SYNC-03 | 消息带版本号、消息 id、时间戳，支持 ACK 与超时重传 | M | I5 | `docs/02-design/04-api.md` | — | — |
 | FR-SYNC-04 | 中继消息端到端加密（配对时协商密钥） | S | I5 | — | — | — |
-| FR-CTX-01 | 采集信号：课表状态、活动状态、心率、前台应用类别、电量、屏幕状态、上次推送时间 | M | I5 | — | — | — |
-| FR-CTX-02 | 硬性阻止：上课中、运动中、免打扰时段、当日已达上限 | M | I5 | — | — | — |
-| FR-CTX-03 | 证据加权打分，输出可学与否、建议卡片数（1–3）、依据列表（中文描述 + 权重） | M | I5 | — | — | — |
-| FR-CTX-04 | 定时（5 分钟）与事件（活动状态变化）双触发评估，使用 WorkManager，不常驻耗电 | M | I5 | — | — | — |
-| FR-CTX-05 | 记录每次评估与推送反馈（作答、忽略、划掉） | M | I5 | — | — | — |
-| FR-CTX-06 | 情境实验室：手动调节信号实时看判断，回放预设场景（排队、通勤、上课、跑步） | M | I5 | — | — | — |
+| FR-CTX-01 | 采集信号：课表状态、活动状态、心率、前台应用类别、电量、屏幕状态、上次推送时间 | M | I5 | `docs/02-design/01-architecture.md` | `feature/context/src/main/kotlin/com/lingxi/feature/context/ContextScreen.kt` | — |
+| FR-CTX-02 | 硬性阻止：上课中、运动中、免打扰时段、当日已达上限 | M | I5 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md` | — | — |
+| FR-CTX-03 | 证据加权打分，输出可学与否、建议卡片数（1–3）、依据列表（中文描述 + 权重） | M | I5 | `docs/02-design/03-database.md` | `context-engine/src/main/kotlin/com/lingxi/context/PushPolicy.kt`<br>`core/notify/src/main/kotlin/com/lingxi/core/notify/ReviewNotifier.kt` | — |
+| FR-CTX-04 | 定时（15 分钟，WorkManager 周期任务下限）与事件（活动状态变化）双触发评估，不常驻耗电 | M | I5 | `docs/02-design/01-architecture.md` | `feature/context/src/main/kotlin/com/lingxi/feature/context/ContextScreen.kt` | — |
+| FR-CTX-05 | 记录每次评估与推送反馈（作答、忽略、划掉） | M | I5 | `docs/02-design/03-database.md`<br>`docs/02-design/04-api.md` | `context-engine/src/main/kotlin/com/lingxi/context/PushPolicy.kt`<br>`core/data/src/main/kotlin/com/lingxi/core/data/CardRepository.kt` | — |
+| FR-CTX-06 | 情境实验室：手动调节信号实时看判断，回放预设场景（排队、通勤、上课、跑步） | M | I5 | `docs/02-design/05-ui.md` | `feature/context/src/main/kotlin/com/lingxi/feature/context/ContextScreen.kt` | — |
 | FR-CTX-07 | 用反馈数据训练轻量分类器替换打分部分，接口不变 | C | 复赛 | — | — | — |
-| FR-CTX-08 | 打扰预算：每日推送上限（默认 3 次）、两次推送最小间隔（默认 2 小时）、连续忽略 2 次后当日停止推送 | M | I5 | — | — | — |
-| FR-CTX-09 | 默认静音时段：深夜 22:30–07:30、午休 12:00–13:30，用户可修改 | M | I5 | — | — | — |
-| FR-AI-01 | 任务分类：OCR、转写、知识抽取、出题、答疑，各自标注能力需求与隐私等级 | M | I1 | — | — | — |
+| FR-CTX-08 | 打扰预算：每日推送上限（默认 3 次）、两次推送最小间隔（默认 2 小时）、连续忽略 2 次后当日停止推送 | M | I5 | `docs/02-design/03-database.md`<br>`docs/02-design/06-detailed-design.md` | `context-engine/src/main/kotlin/com/lingxi/context/PushPolicy.kt` | — |
+| FR-CTX-09 | 默认静音时段：深夜 22:30–07:30、午休 12:00–13:30，用户可修改 | M | I5 | `docs/02-design/03-database.md`<br>`docs/02-design/06-detailed-design.md` | `context-engine/src/main/kotlin/com/lingxi/context/PushPolicy.kt` | — |
+| FR-AI-01 | 任务分类：OCR、转写、知识抽取、出题、答疑，各自标注能力需求与隐私等级 | M | I1 | `docs/02-design/01-architecture.md` | — | — |
 | FR-AI-02 | 依据网络、电量、发热、隐私等级、用户设置决定执行位置 | M | I1 | — | — | — |
-| FR-AI-03 | 执行失败自动切换另一侧，最多一次 | M | I1 | — | — | — |
-| FR-AI-04 | 每次执行记录执行位置、原因、耗时，界面可查看 | S | I2 | — | — | — |
-| FR-AI-05 | 只能上云的任务在断网时进入持久化队列，联网后补做 | M | I4 | — | — | — |
+| FR-AI-03 | 执行失败自动切换另一侧，最多一次 | M | I1 | `docs/02-design/01-architecture.md` | `core/network/src/main/kotlin/com/lingxi/core/network/GatewayApi.kt` | — |
+| FR-AI-04 | 每次执行记录执行位置、原因、耗时，界面可查看 | S | I2 | `docs/02-design/03-database.md`<br>`docs/02-design/05-ui.md`<br>`docs/02-design/06-detailed-design.md` | — | — |
+| FR-AI-05 | 只能上云的任务在断网时进入持久化队列，联网后补做 | M | I4 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md`<br>`docs/02-design/06-detailed-design.md` | `core/network/src/main/kotlin/com/lingxi/core/network/GatewayApi.kt`<br>`core/network/src/main/kotlin/com/lingxi/core/network/GatewayError.kt` | — |
 | FR-AI-06 | 端侧小模型出题 | C | 复赛 | — | — | — |
-| FR-GW-01 | `/v1/extract`：识别文本 → 笔记、知识点、关系，Schema 校验，失败重试一次 | M | I2 | — | — | — |
-| FR-GW-02 | `/v1/cards`：知识点 → 卡片，按题型约束输出 | M | I2 | — | — | — |
-| FR-GW-03 | `/v1/chat`：围绕笔记的答疑 | C | 复赛 | — | — | — |
-| FR-GW-04 | `/v1/relay`：手表中继 WebSocket | M | I5 | — | — | — |
+| FR-GW-01 | `/v1/extract`：识别文本 → 笔记、知识点、关系，Schema 校验，失败重试一次 | M | I2 | `docs/02-design/04-api.md` | `core/network/src/main/kotlin/com/lingxi/core/network/GatewayApi.kt` | — |
+| FR-GW-02 | `/v1/cards`：知识点 → 卡片，按题型约束输出 | M | I2 | `docs/02-design/04-api.md` | `core/network/src/main/kotlin/com/lingxi/core/network/GatewayApi.kt` | — |
+| FR-GW-03 | `/v1/chat`：围绕笔记的答疑 | C | 复赛 | `docs/02-design/04-api.md` | — | — |
+| FR-GW-04 | `/v1/relay`：手表中继 WebSocket | M | I5 | `docs/02-design/04-api.md` | — | — |
 | FR-GW-05 | 设备令牌鉴权、按设备限流、调用日志（不含用户内容） | M | I1 | — | — | — |
-| FR-GW-06 | 提示词模板带版本号，响应中返回所用版本 | S | I2 | — | — | — |
-| FR-SET-01 | 隐私设置：是否允许上传转写文本、照片识别文本 | M | I1 | — | — | — |
-| FR-SET-02 | 推送设置：开关、每日上限、免打扰时段 | M | I5 | — | — | — |
-| FR-SET-03 | 数据导出（JSON）与清空 | S | I5 | — | — | — |
+| FR-GW-06 | 提示词模板带版本号，响应中返回所用版本 | S | I2 | `docs/02-design/03-database.md`<br>`docs/02-design/04-api.md` | `core/network/src/main/kotlin/com/lingxi/core/network/GatewayError.kt` | — |
+| FR-SET-01 | 隐私设置：是否允许上传转写文本、照片识别文本 | M | I1 | `docs/02-design/03-database.md`<br>`docs/02-design/05-ui.md`<br>`docs/02-design/06-detailed-design.md` | `feature/settings/src/main/kotlin/com/lingxi/feature/settings/SettingsScreen.kt` | — |
+| FR-SET-02 | 推送设置：开关、每日上限、免打扰时段 | M | I5 | `docs/02-design/03-database.md` | — | — |
+| FR-SET-03 | 数据导出（JSON）与清空 | S | I5 | `docs/02-design/03-database.md` | — | — |
 | FR-SET-04 | 首次启动引导：权限说明、创建第一门课、配对手表 | S | I5 | — | — | — |
 | NFR-PERF-01 | 一张板书到结构化笔记 | NFR | 全程 | — | — | — |
 | NFR-PERF-02 | 手表卡片推送到显示 | NFR | 全程 | — | — | — |
@@ -90,15 +90,15 @@
 | NFR-RES-02 | 情境评估后台耗电 | NFR | 全程 | — | — | — |
 | NFR-REL-01 | 手表作答回传 | NFR | 全程 | — | — | — |
 | NFR-REL-02 | 大模型输出合规率 | NFR | 全程 | — | — | — |
-| NFR-AVAIL-01 | 断网可用功能 | NFR | 全程 | — | — | — |
+| NFR-AVAIL-01 | 断网可用功能 | NFR | 全程 | `docs/02-design/01-architecture.md` | — | — |
 | NFR-SEC-01 | 手机端无 API Key | NFR | 全程 | — | — | — |
-| NFR-SEC-02 | 网关不存储用户内容 | NFR | 全程 | — | — | — |
-| NFR-PRIV-01 | 录音原始文件不出手机 | NFR | 全程 | — | — | — |
+| NFR-SEC-02 | 网关不存储用户内容 | NFR | 全程 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md` | — | — |
+| NFR-PRIV-01 | 录音原始文件不出手机 | NFR | 全程 | `docs/02-design/06-detailed-design.md` | `core/ondevice/src/main/kotlin/com/lingxi/core/ondevice/OnDeviceEngines.kt` | — |
 | NFR-COMP-01 | 无 Google 服务设备 | NFR | 全程 | — | — | — |
 | NFR-COMP-02 | 手表跨生态 | NFR | 全程 | — | — | — |
 | NFR-UX-01 | 手表单次作答 | NFR | 全程 | — | — | — |
 | NFR-UX-02 | 每次推送附可理解依据 | NFR | 全程 | — | — | — |
-| NFR-MAINT-01 | 核心模块单测行覆盖率 | NFR | 全程 | — | — | — |
+| NFR-MAINT-01 | 核心模块单测行覆盖率 | NFR | 全程 | `docs/02-design/01-architecture.md` | — | — |
 | NFR-MAINT-02 | 静态检查 | NFR | 全程 | — | — | — |
 | NFR-MAINT-03 | 公开 API 文档 | NFR | 全程 | — | — | — |
 | NFR-LEGAL-01 | 开源登记 | NFR | 全程 | — | — | — |
