@@ -1,6 +1,7 @@
 package com.lingxi.core.review
 
 import com.lingxi.core.model.Rating
+import java.time.Duration
 import kotlin.math.exp
 import kotlin.math.pow
 import kotlin.math.roundToLong
@@ -41,7 +42,7 @@ class FsrsScheduler(
     private val weights: DoubleArray = DEFAULT_WEIGHTS,
     private val desiredRetention: Double = 0.9,
     private val maxIntervalDays: Double = 365.0,
-) {
+) : Scheduler {
     init {
         require(weights.size == 17) { "FSRS-4.5 需要 17 个参数" }
         require(desiredRetention in 0.7..0.99) { "目标保持率应在 0.7 到 0.99 之间" }
@@ -110,6 +111,30 @@ class FsrsScheduler(
         } else {
             val days = nextIntervalDays(next.stability)
             ScheduleResult(next, nowMillis + (days * DAY_MILLIS).roundToLong(), days)
+        }
+    }
+
+    override fun schedule(
+        state: MemoryState?,
+        rating: Rating,
+        nowMillis: Long,
+    ): ScheduleResult = review(state, rating, nowMillis)
+
+    /**
+     * 对同一状态分别模拟四档评分，得到每档的下次间隔，用于在自评按钮上显示「10分 / 1天 / 4天」[FR-REV-07]。
+     *
+     * 只做计算不改状态；结果按评分强制单调不减（TC-REV-01），
+     * 避免极端参数下「模糊」反而比「记得」间隔长、让用户困惑。
+     */
+    override fun predictIntervals(
+        state: MemoryState?,
+        nowMillis: Long,
+    ): Map<Rating, Duration> {
+        var floor = 0L
+        return Rating.entries.associateWith { rating ->
+            val millis = (review(state, rating, nowMillis).intervalDays * DAY_MILLIS).roundToLong()
+            floor = maxOf(floor, millis)
+            Duration.ofMillis(floor)
         }
     }
 

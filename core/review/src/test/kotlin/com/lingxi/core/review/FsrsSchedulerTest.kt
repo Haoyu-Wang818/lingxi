@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import java.time.Duration
 
 class FsrsSchedulerTest {
     private val fsrs = FsrsScheduler()
@@ -73,5 +74,51 @@ class FsrsSchedulerTest {
             state = fsrs.review(state, Rating.AGAIN, now).state
             assertTrue(state.difficulty in 1.0..10.0)
         }
+    }
+
+    @Test
+    @DisplayName("[FR-REV-07] 新卡预测间隔：忘了 10 分钟，其余档与首次调度结果一致")
+    fun predictIntervalsForNewCardMatchesSchedule() {
+        val predicted = fsrs.predictIntervals(null, t0)
+        assertEquals(Duration.ofMinutes(10), predicted[Rating.AGAIN])
+        listOf(Rating.HARD, Rating.GOOD, Rating.EASY).forEach { rating ->
+            val expected = fsrs.schedule(null, rating, t0).dueAtMillis - t0
+            assertEquals(expected, predicted.getValue(rating).toMillis(), "rating=$rating")
+        }
+    }
+
+    @Test
+    @DisplayName("[FR-REV-04] 各种记忆状态下预测间隔单调：忘了 ≤ 模糊 ≤ 记得 ≤ 太简单（TC-REV-01）")
+    fun predictIntervalsAreMonotonic() {
+        val states = mutableListOf<MemoryState?>(null)
+        var state: MemoryState? = null
+        var now = t0
+        Rating.entries.forEach { rating ->
+            repeat(4) {
+                val result = fsrs.review(state, rating, now)
+                state = result.state
+                states += state
+                now = result.dueAtMillis + day
+            }
+        }
+        states.forEach { s ->
+            listOf(0L, 1L, 30L, 400L).forEach { lateDays ->
+                val at = (s?.lastReviewMillis ?: t0) + lateDays * day
+                val p = fsrs.predictIntervals(s, at)
+                val ordered = Rating.entries.map { p.getValue(it) }
+                assertEquals(Rating.entries.size, p.size)
+                assertTrue(ordered.zipWithNext().all { (a, b) -> a <= b }, "state=$s late=$lateDays p=$p")
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("[FR-REV-07] 预测不改变状态：预测后再调度结果相同")
+    fun predictIntervalsHasNoSideEffect() {
+        val base = fsrs.review(null, Rating.GOOD, t0).state
+        val now = t0 + 3 * day
+        val before = fsrs.schedule(base, Rating.GOOD, now)
+        fsrs.predictIntervals(base, now)
+        assertEquals(before, fsrs.schedule(base, Rating.GOOD, now))
     }
 }
