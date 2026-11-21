@@ -53,14 +53,14 @@
 | FR-WEAR-08 | 小屏内容规范：卡片生成时同时产出手表版本 watchPrompt（≤ 20 字）与 watchAnswer（≤ 12 字），校验不过置空、不推手表；手表只用两键（AGAIN / GOOD）；忽略或「稍后」不写入 FSRS | M | I5 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md` | — | — |
 | FR-WEAR-06 | 华为 GT 5 轻穿戴应用经 Wear Engine 收卡片、回传作答 | C | 复赛 | — | — | — |
 | FR-WEAR-07 | 手表采集心率与活动状态并发送给手机 | S | I5 | — | — | — |
-| FR-SYNC-01 | 手机与手表通过 6 位配对码经网关中继配对 | M | I5 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md` | — | — |
-| FR-SYNC-02 | 链路探测与主备切换：按 Data Layer → Wear Engine → 中继 → 通知镜像优先级选择 | M | I5 | `docs/02-design/01-architecture.md` | — | — |
+| FR-SYNC-01 | 手机与手表配对：有 Play 服务时使用系统配对（Wear Data Layer）；中继模式使用 6 位配对码 | M | I5 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md` | — | — |
+| FR-SYNC-02 | 链路探测与主备切换：初赛以 Wear Data Layer 为主链路、网关中继为备链路，通知镜像兜底；复赛可增加 Wear Engine | M | I5 | `docs/02-design/01-architecture.md` | — | — |
 | FR-SYNC-03 | 消息带版本号、消息 id、时间戳，支持 ACK 与超时重传 | M | I5 | — | — | — |
 | FR-SYNC-04 | 中继消息端到端加密（配对时协商密钥） | S | I5 | — | — | — |
 | FR-CTX-01 | 采集信号：课表状态、活动状态、心率、前台应用类别、电量、屏幕状态、上次推送时间 | M | I5 | `docs/02-design/01-architecture.md` | — | — |
 | FR-CTX-02 | 硬性阻止：上课中、运动中、免打扰时段、当日已达上限 | M | I5 | `docs/02-design/01-architecture.md`<br>`docs/02-design/03-database.md` | — | — |
 | FR-CTX-03 | 证据加权打分，输出可学与否、建议卡片数（1–3）、依据列表（中文描述 + 权重） | M | I5 | `docs/02-design/03-database.md` | — | — |
-| FR-CTX-04 | 定时（5 分钟）与事件（活动状态变化）双触发评估，使用 WorkManager，不常驻耗电 | M | I5 | `docs/02-design/01-architecture.md` | — | — |
+| FR-CTX-04 | 定时（15 分钟，WorkManager 周期任务下限）与事件（活动状态变化）双触发评估，不常驻耗电 | M | I5 | `docs/02-design/01-architecture.md` | — | — |
 | FR-CTX-05 | 记录每次评估与推送反馈（作答、忽略、划掉） | M | I5 | `docs/02-design/03-database.md` | — | — |
 | FR-CTX-06 | 情境实验室：手动调节信号实时看判断，回放预设场景（排队、通勤、上课、跑步） | M | I5 | — | — | — |
 | FR-CTX-07 | 用反馈数据训练轻量分类器替换打分部分，接口不变 | C | 复赛 | — | — | — |

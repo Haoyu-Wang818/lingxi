@@ -14,7 +14,7 @@
 | D2 | **算法与界面分离**：不依赖 Android 的逻辑放 JVM 模块，脱离 SDK 可测 | C4、NFR-MAINT-01 |
 | D3 | **依赖单向**：`app / wear → feature → core`，`core` 之间只依赖 `core:model` | CLAUDE.md |
 | D4 | **AI 调用唯一入口**：业务只通过 `InferenceRouter`，执行位置可解释 | C3、FR-AI-01 至 05 |
-| D5 | **不依赖 Google 服务**：手表通信走 `WatchLink` 抽象，通知走系统通知 | C1、FR-SYNC-02 |
+| D5 | **Google 依赖可替换**：手表同步初赛用 Wear Data Layer，但只通过 `WatchLink` 抽象使用，并隔离在独立模块；无 Play 服务时自动切到网关中继 | C1、FR-SYNC-02、ADR 0007 |
 | D6 | **离线优先**：只能上云的任务进入持久化待办队列，联网补做 | FR-AI-05、NFR-AVAIL-01 |
 | D7 | **可追溯**：每个组件标注所实现的需求编号 | 开发规范 |
 
@@ -31,10 +31,10 @@ cloud "通义千问\n(DashScope)" as qwen
 
 student --> phone : 拍板书、录音、卡片复习
 student --> watch : 抬腕看推送、两键作答
-phone --> watch : 复习通知（系统镜像）\n微卡片（WatchLink）
+phone --> watch : 复习通知（系统镜像）\n微卡片（Wear Data Layer，备用中继）
 watch --> phone : 作答结果、心率
-phone --> gw : HTTPS：知识抽取、卡片生成\nWebSocket：手表中继
-watch --> gw : WebSocket 中继
+phone --> gw : HTTPS：知识抽取、卡片生成\nWebSocket：手表中继（备链路）
+watch ..> gw : WebSocket 中继（备链路）
 gw --> qwen : 大模型 API（Key 仅在网关）
 @enduml
 ```
@@ -44,9 +44,9 @@ gw --> qwen : 大模型 API（Key 仅在网关）
 | 容器 | 技术 | 职责 | 数据 |
 | --- | --- | --- | --- |
 | 手机 App | Kotlin、Jetpack Compose、Room、WorkManager、CameraX、ONNX Runtime、sherpa-onnx | 捕获、端侧识别、卡片式复习、图谱、情境评估、推送、手表协调 | Room 数据库 + 素材文件（应用私有目录） |
-| Wear OS App | Kotlin、Wear Compose、Tiles | 微卡片展示与两键作答、磁贴「今日待复习」、心率采集 | 仅缓存未回传的作答 |
+| Wear OS App | Kotlin、Wear Compose、Tiles、Wear Data Layer | 微卡片展示与两键作答、磁贴「今日待复习」、心率采集 | 仅缓存未回传的作答 |
 | 系统通知镜像 | Android 通知 + 手表厂商同步 | 任何手表显示复习通知 | 无 |
-| 灵犀网关 | Python 3.12、FastAPI、httpx、pydantic | 抽取、出题、答疑代理；设备鉴权、限流；手表中继 | 无持久用户数据，只有调用计数与脱敏日志 |
+| 灵犀网关 | Python 3.12、FastAPI、httpx、pydantic | 抽取、出题、答疑代理；设备鉴权、限流；手表中继（Data Layer 不可用时的备链路） | 无持久用户数据，只有调用计数与脱敏日志 |
 | 通义千问 | DashScope OpenAI 兼容接口 | 大模型推理 | 外部 |
 
 ## 4. 模块视图（C4 第 3 层，Gradle 模块）
@@ -74,6 +74,7 @@ package "核心层 core（Android）" {
   [core:ondevice] as ondev
   [core:notify] as notify
   [core:designsystem] as ds
+  [sync-datalayer] as dl
 }
 package "核心层 core（纯 JVM）" {
   [core:model] as model
@@ -104,6 +105,9 @@ fgraph --> data
 fctx --> ctx
 fctx --> notify
 fctx --> sync
+dl --> sync
+app --> dl
+wear --> dl
 data --> model
 net --> model
 ondev --> ai
@@ -123,7 +127,8 @@ ctx --> model
 | `core:review` | JVM | 已有，需扩展 | FSRS 调度；四档下次间隔预测；每日队列与上限；短组与组内回炉；图谱感知排序；考前模式 | FR-REV-02、03、07、14、15、16 |
 | `core:quality` | JVM | **新增** | 卡片与手表版本的规则校验（长度、答案唯一、干扰项、相关性）；知识关系校验（自环、端点、先修环） | FR-REV-10、FR-WEAR-08、FR-KG-03 |
 | `core:ai` | JVM | 已有 | 任务分类、路由策略、`InferenceRouter`、失败切换、执行记录 | FR-AI-01 至 04 |
-| `core:sync` | JVM | 已有，需扩展 | `WatchLink` 抽象、消息协议（版本、id、ACK、重传）、主备切换、中继客户端；配对与加密 | FR-SYNC-01 至 04 |
+| `core:sync` | JVM | 已有，需扩展 | `WatchLink` 抽象、消息协议（版本、id、ACK、重传）、主备切换、中继客户端；中继模式的配对与加密 | FR-SYNC-01 至 04 |
+| `sync-datalayer` | Android | **新增** | `DataLayerWatchLink`：基于 Wear Data Layer 的主链路，手机与手表共用；唯一依赖 Play 服务的模块 | FR-SYNC-02、ADR 0007 |
 | `context-engine` | JVM | 已有，需扩展 | 可学习时刻判断；打扰预算；静音时段；依据生成 | FR-CTX-02、03、08、09 |
 | `core:data` | Android | **新增** | Room 数据库、DAO、仓库层、文件存储、待办任务队列 | 5 节数据需求、FR-AI-05 |
 | `core:network` | Android | **新增** | 网关客户端（OkHttp）：鉴权令牌、超时重试、错误映射；云端 `ModelBackend` 实现 | FR-GW-*、FR-AI-03 |
@@ -187,16 +192,16 @@ cap -> db : 事务写入笔记、知识点、关系、卡片、初始记忆状�
 
 ### 5.3 情境推送到手表（I5）
 
-WorkManager 每 15 分钟（系统最小周期）+ 活动识别变化时触发 → `feature:context` 汇总信号 → `context-engine` 先查静音时段与打扰预算，再打分 → 可学则选 1 张有手表版本的到期卡 → `core:notify` 发带两键的通知（手表自动镜像）；若已配对 Wear OS 手表，同时经 `WatchLink` 推微卡片 → 作答经通知按钮或手表回传，写入记忆状态；忽略只记推送反馈，不写 FSRS。
+WorkManager 每 15 分钟（系统最小周期）+ 活动识别变化时触发 → `feature:context` 汇总信号 → `context-engine` 先查静音时段与打扰预算，再打分 → 可学则选 1 张有手表版本的到期卡 → `core:notify` 发带两键的通知（手表自动镜像）；若已配对 Wear OS 手表，同时经 `WatchLink`（Data Layer 主链路，中继备链路）推微卡片 → 作答经通知按钮或手表回传，写入记忆状态；忽略只记推送反馈，不写 FSRS。
 
-> 说明：SRS FR-CTX-04 写的是 5 分钟评估周期，但 WorkManager 周期任务最短 15 分钟。设计上采用「15 分钟周期 + 活动状态变化事件触发」，需求将在 v0.3 同步修改。
+> 说明：WorkManager 周期任务最短 15 分钟，SRS v0.3 已据此修改 FR-CTX-04。
 
 ## 6. 部署视图
 
 | 阶段 | 手机 | 手表 | 网关 |
 | --- | --- | --- | --- |
-| 开发与初赛 | Mac 上 Android 模拟器（API 36） | Mac 上 Wear OS 模拟器 | Mac 本机 `uvicorn`，模拟器经 `10.0.2.2` 访问 |
-| 决赛 | 真机（参考 HUAWEI Mate 20 Pro） | 组委会 OPPO 手表或自备 Wear OS 手表；华为 GT 5 走通知镜像 | 云服务器或现场笔记本，局域网可达 |
+| 开发与初赛 | Mac 上 Android 模拟器（API 36，带 Play 服务） | Mac 上 Wear OS 模拟器，经 Data Layer 与手机配对 | Mac 本机 `uvicorn`，模拟器经 `10.0.2.2` 访问 |
+| 决赛 | 真机（届时与组委会确认是否有 Google 服务） | 组委会 OPPO 手表或自备 Wear OS 手表；无 Play 服务时切到中继；华为 GT 5 走通知镜像 | 云服务器或现场笔记本，局域网可达 |
 
 ## 7. 横切关注点
 
@@ -213,7 +218,7 @@ WorkManager 每 15 分钟（系统最小周期）+ 活动识别变化时触发 �
 
 1. `app` 中 5 个原型页面迁入对应 `feature:*` 模块，`SampleData` 只保留给预览。
 2. `ReviewCard` 增加字段与 `CardType.CLOZE`，`Rating` 不变。
-3. 新建 `core:data`、`core:network`、`core:ondevice`、`core:notify`、`core:quality`、`core:designsystem`。
+3. 新建 `core:data`、`core:network`、`core:ondevice`、`core:notify`、`core:quality`、`core:designsystem`、`sync-datalayer`。
 4. `docs/architecture.md` 精简为指向本文档的摘要。
 
 ## 9. 待决策（将形成 ADR）
@@ -224,4 +229,4 @@ WorkManager 每 15 分钟（系统最小周期）+ 活动识别变化时触发 �
 | 0004 | 依赖注入 | 手写 `AppContainer`，不引入 Hilt |
 | 0005 | 图谱渲染 | Compose Canvas 自绘力导向布局（无合适的开源 Compose 图谱库） |
 | 0006 | 本地数据库 | Room + KSP |
-| 0007 | 手表通信 | 通知镜像为主、`WatchLink` 中继为 Wear OS 增强，Wear Data Layer 不使用 |
+| 0007 | 手表通信 | 已采纳：初赛用 Wear Data Layer（独立模块），中继备用，通知为推送入口 |

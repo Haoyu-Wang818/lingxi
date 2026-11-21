@@ -276,7 +276,7 @@ SELECT * FROM prereq;
 | id | TEXT | PK | |
 | evaluation_id | INTEGER | FK→context_evaluation SET NULL | |
 | card_id | TEXT | FK→card CASCADE | |
-| channel | TEXT | NN | NOTIFICATION / WEAR_OS / WEAR_ENGINE |
+| channel | TEXT | NN | NOTIFICATION / DATA_LAYER / RELAY / WEAR_ENGINE |
 | sent_at | INTEGER | NN，IDX | 打扰预算按当日计数与最近一次时间判断 |
 | outcome | TEXT | | ANSWERED / OPENED / DISMISSED / IGNORED / SNOOZED |
 | outcome_at | INTEGER | | |
@@ -314,7 +314,8 @@ SELECT * FROM prereq;
 | id | TEXT | PK | |
 | name | TEXT | NN | |
 | platform | TEXT | NN | WEAR_OS / HUAWEI_LITE / OTHER |
-| link_type | TEXT | NN | RELAY / WEAR_ENGINE / NOTIFICATION_ONLY |
+| node_id | TEXT | | Data Layer 节点 id |
+| link_type | TEXT | NN | DATA_LAYER / RELAY / WEAR_ENGINE / NOTIFICATION_ONLY |
 | pair_code | TEXT | | 中继会话码 |
 | public_key | BLOB | | 端到端加密公钥 |
 | paired_at / last_seen_at | INTEGER | | |
