@@ -40,6 +40,25 @@ val hasAndroidSdk = !System.getenv("ANDROID_HOME").isNullOrBlank() ||
 if (hasAndroidSdk) {
     include(":app")
     include(":wear")
+
+    // 核心层 Android 模块（见 docs/02-design/01-architecture.md 第 4 节）。
+    include(":core:data")
+    include(":core:network")
+    include(":core:ondevice")
+    include(":core:notify")
+    include(":core:designsystem")
+    // 唯一依赖 Google Play 服务的模块：Wear Data Layer 主链路。
+    include(":sync-datalayer")
+
+    // 功能层：每个页面一个模块，只依赖 core。
+    include(":feature:today")
+    include(":feature:review")
+    include(":feature:capture")
+    include(":feature:note")
+    include(":feature:graph")
+    include(":feature:course")
+    include(":feature:context")
+    include(":feature:settings")
 } else {
     logger.lifecycle("未检测到 Android SDK，仅构建 JVM 模块（:core:*、:context-engine）。")
 }

@@ -12,6 +12,7 @@ navigation = "2.10.2"
 core-ktx = "1.19.1"
 wear-compose = "1.7.1"
 okhttp = "5.5.1"
+play-services-wearable = "19.0.0"
 
 [libraries]
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -36,6 +37,8 @@ wear-compose-material = { module = "androidx.wear.compose:compose-material", ver
 wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "wear-compose" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver3", version.ref = "okhttp" }
+# Google 专有组件，非开源；只允许 sync-datalayer 模块引入（ADR 0007）。
+play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "play-services-wearable" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

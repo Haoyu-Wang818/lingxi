@@ -15,6 +15,12 @@
 | FastAPI、Uvicorn、httpx、Pydantic、websockets | 云端网关与手表中继 | MIT / BSD-3-Clause |
 | pytest、ruff | 网关测试与检查 | MIT |
 
+## 非开源依赖
+
+| 组件 | 用途 | 许可证 |
+| --- | --- | --- |
+| Google Play 服务 Wearable（`com.google.android.gms:play-services-wearable` 19.0.0） | Wear Data Layer 手机与手表主链路，只在 `sync-datalayer` 模块引入；设备无 Play 服务时自动走自研中继（ADR 0007） | Google 专有（Android Software Development Kit License），**非开源** |
+
 ## 计划使用（接入时更新本表）
 
 | 组件 | 用途 | 许可证 |
