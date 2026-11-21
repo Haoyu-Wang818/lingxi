@@ -2,14 +2,16 @@
 
 from functools import lru_cache
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", populate_by_name=True)
 
     llm_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    llm_api_key: str = ""
+    # 兼容阿里云百炼文档中的标准变量名 DASHSCOPE_API_KEY。
+    llm_api_key: str = Field(default="", validation_alias=AliasChoices("LLM_API_KEY", "DASHSCOPE_API_KEY"))
     llm_model: str = "qwen-plus"
     llm_timeout_seconds: float = 30.0
     gateway_token: str = ""

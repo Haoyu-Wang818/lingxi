@@ -236,3 +236,12 @@ def test_rate_limiter_window_slides():
     t[0] = 60.0
     assert rl.check("d", 2) is None
     assert device_key("Bearer a", "x") != device_key("Bearer a", "y")
+
+
+def test_dashscope_api_key_alias_is_accepted(monkeypatch):
+    """百炼文档使用 DASHSCOPE_API_KEY，网关也接受这个变量名。"""
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.setenv("DASHSCOPE_API_KEY", "sk-from-alias")
+    assert Settings(_env_file=None).llm_api_key == "sk-from-alias"
+    monkeypatch.setenv("LLM_API_KEY", "sk-primary")
+    assert Settings(_env_file=None).llm_api_key == "sk-primary"
