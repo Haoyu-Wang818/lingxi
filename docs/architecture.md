@@ -20,7 +20,7 @@ OCR/ASR/向量/小模型   大模型 API · 鉴权
 ## 关键数据流
 
 1. **课堂捕获**：照片/录音 → 端侧 OCR、语音识别 → `InferenceRouter` 路由「知识抽取」任务（需云端）→ 网关 `/v1/extract` → 校验后写入图谱。
-2. **微复习推送**：手机与手表信号 → `LearnableMomentDetector` → 可学习时刻 → 选取 FSRS 到期卡片 → Data Layer 推到手表 → 作答结果回传并更新 `MemoryState`。
+2. **微复习推送**：手机与手表信号 → `LearnableMomentDetector` → 可学习时刻 → 选取 FSRS 到期卡片 → 手机通知（任何手表镜像）；Wear OS 手表经 `WatchLink`（网关中继，不依赖 Google 服务）推送微卡片 → 作答结果回传并更新 `MemoryState`。
 3. **断网**：路由策略对两侧都能做的任务改走端侧；只能上云的任务返回「不可用」并在界面说明原因。
 
 ## 开发路线
