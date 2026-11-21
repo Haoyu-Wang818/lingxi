@@ -3,21 +3,16 @@ package com.lingxi.app.ui
 import com.lingxi.core.model.CardType
 import com.lingxi.core.model.KnowledgeEdge
 import com.lingxi.core.model.KnowledgePoint
-import com.lingxi.core.model.Rating
 import com.lingxi.core.model.RelationType
 import com.lingxi.core.model.ReviewCard
 import com.lingxi.core.model.SourceRef
-import com.lingxi.core.review.DeckCard
-import com.lingxi.core.review.FsrsScheduler
 
 /**
- * 原型阶段的演示数据：高等数学第 5 讲「泰勒公式」一节课（11 月 18 日板书 4 页）。
+ * 示例内容：高等数学第 5 讲「泰勒公式」一节课（11 月 18 日板书 4 页）。
  * 8 张卡片覆盖问答、挖空、判断、单选四种题型 [FR-REV-11]，每张都带板书来源与手表压缩版 [FR-REV-10]、[FR-WEAR-08]。
- * 接入数据层（Room）和大模型抽取后，这些数据会被真实笔记替换。
+ * I1 起首次启动时由 [com.lingxi.app.di.SeedData] 写入数据库，复习页从数据库读取；I2 接入大模型抽取后由真实笔记替换。
  */
 object SampleData {
-    private const val COURSE = "高等数学"
-    private const val LECTURE_DATE = "11月18日"
     private const val BOARD = "cap-1118-board"
 
     val points =
@@ -135,49 +130,6 @@ object SampleData {
                 sourceRef = board(3),
             ),
         )
-
-    /** 连续学习天数（演示值）。 */
-    const val STREAK_DAYS = 6
-
-    /** 按每张约 15 秒估算今日用时，首页与复习页顶部显示「今日 N 张，约 M 分钟」[FR-REV-08]。 */
-    fun todayLine(count: Int = cards.size): String = "今日 $count 张，约 ${(count * 15 + 59) / 60} 分钟"
-
-    /**
-     * 把卡片与知识点、图谱邻居、板书来源打包成复习页需要的 [DeckCard]。
-     * 后 4 张模拟 3 天前已学过一次，让按钮上的间隔与新卡不同，体现 FSRS 按记忆状态调度。
-     */
-    fun deck(nowMillis: Long = System.currentTimeMillis()): List<DeckCard> {
-        val byId = points.associateBy { it.id }
-        val fsrs = FsrsScheduler()
-        val reviewedAt = nowMillis - 3 * FsrsScheduler.DAY_MILLIS.toLong()
-        return cards.mapIndexed { index, card ->
-            val point = byId.getValue(card.knowledgePointId)
-            DeckCard(
-                card = card,
-                courseName = COURSE,
-                pointTitle = point.title,
-                pointSummary = point.summary,
-                sourceLabel = card.sourceRef?.page?.let { "$LECTURE_DATE 板书 第${it}页" },
-                prerequisites = neighbors(point.id, prerequisite = true).map { byId.getValue(it).title },
-                related = neighbors(point.id, prerequisite = false).map { byId.getValue(it).title },
-                memory = if (index >= 4) fsrs.review(null, Rating.GOOD, reviewedAt).state else null,
-            )
-        }
-    }
-
-    /** 前置：指向该点的先修边；相关：其余任意方向的边（含后续知识点）。 */
-    private fun neighbors(
-        id: String,
-        prerequisite: Boolean,
-    ): List<String> =
-        if (prerequisite) {
-            edges.filter { it.toId == id && it.relation == RelationType.PREREQUISITE }.map { it.fromId }
-        } else {
-            edges
-                .filter { (it.fromId == id || it.toId == id) && !(it.toId == id && it.relation == RelationType.PREREQUISITE) }
-                .map { if (it.fromId == id) it.toId else it.fromId }
-                .distinct()
-        }
 
     val notes =
         listOf(

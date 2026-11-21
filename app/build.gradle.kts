@@ -19,6 +19,8 @@ android {
         val gatewayUrl = (project.findProperty("gatewayUrl") as String?) ?: "http://10.0.2.2:8000"
         buildConfigField("String", "GATEWAY_URL", "\"$gatewayUrl\"")
         buildConfigField("String", "PAIR_CODE", "\"${project.findProperty("pairCode") ?: "demo"}\"")
+        // 设备访问网关的令牌（对应 server/.env 的 GATEWAY_TOKEN），不是大模型 API Key；手机端从不持有 Key。
+        buildConfigField("String", "GATEWAY_TOKEN", "\"${project.findProperty("gatewayToken") ?: ""}\"")
     }
 
     compileOptions {
@@ -34,6 +36,8 @@ android {
 
 dependencies {
     implementation(project(":core:ai"))
+    implementation(project(":core:data"))
+    implementation(project(":core:network"))
     implementation(project(":core:review"))
     implementation(project(":context-engine"))
     implementation(project(":core:sync"))
@@ -49,6 +53,7 @@ dependencies {
     implementation(project(":feature:context"))
     implementation(project(":feature:settings"))
 
+    implementation(libs.datastore.preferences)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
