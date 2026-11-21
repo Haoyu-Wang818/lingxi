@@ -43,11 +43,42 @@ data class CardsRequest(
     val requireWatchVariant: Boolean = true,
 )
 
+/**
+ * 网关生成的一张卡片。[card] 的 id 由网关临时生成，知识点 id 是抽取结果中的临时 id，写库前需按合并结果映射；
+ * [sourceIds] 是卡片来源的识别文本段 id，用于溯源到原图文字框 [FR-REV-10]。
+ */
+data class GeneratedCard(
+    val card: ReviewCard,
+    val sourceIds: List<String> = emptyList(),
+)
+
 /** `/v1/cards` 响应；[rejected] 为知识点 id 到拒绝原因代码的列表 [FR-REV-10]。 */
 data class CardsResponse(
     val cards: List<ReviewCard>,
     val rejected: List<Pair<String, String>> = emptyList(),
     val promptVersion: String = "",
+    val sourceIds: Map<String, List<String>> = emptyMap(),
+)
+
+/** 网关整理出的结构化笔记 [FR-NOTE-03]。 */
+data class GeneratedNote(
+    val title: String,
+    val markdown: String,
+)
+
+/**
+ * `/v1/extract`（with_cards）响应：一次请求得到笔记、知识点、关系与卡片 [FR-NOTE-03]、[FR-KG-01]、[FR-REV-01]。
+ *
+ * @property note 笔记生成失败时为 null，不影响知识点与卡片。
+ * @property latencyMs 网关端整理耗时。
+ */
+data class OrganizeResult(
+    val note: GeneratedNote?,
+    val extraction: Extraction,
+    val cards: List<GeneratedCard>,
+    val rejected: List<Pair<String, String>>,
+    val promptVersion: String,
+    val latencyMs: Long,
 )
 
 /** `/health` 响应。 */
@@ -73,6 +104,9 @@ data class ChatReply(
 interface GatewayApi {
     /** 识别文本 → 知识点与关系。 */
     suspend fun extract(req: ExtractRequest): Result<Extraction>
+
+    /** 识别文本 → 笔记 + 知识点 + 关系 + 卡片，一次请求完成（手机端整理流水线使用）。 */
+    suspend fun organize(req: ExtractRequest): Result<OrganizeResult>
 
     /** 知识点 → 卡片（含手表压缩版）。 */
     suspend fun generateCards(req: CardsRequest): Result<CardsResponse>

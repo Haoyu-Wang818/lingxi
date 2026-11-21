@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     # 兼容阿里云百炼文档中的标准变量名 DASHSCOPE_API_KEY。
     llm_api_key: str = Field(default="", validation_alias=AliasChoices("LLM_API_KEY", "DASHSCOPE_API_KEY"))
     llm_model: str = "qwen-plus"
+    # 整理流水线（笔记、知识点、出卡）拆成多次短调用，用速度快的模型满足 15 秒目标（NFR-PERF-01）。
+    llm_model_fast: str = "qwen-flash"
     llm_timeout_seconds: float = 30.0
     gateway_token: str = ""
     # 每设备每分钟 AI 请求上限，超出返回 429（04-api.md 1.1 节，FR-GW-05）。

@@ -68,6 +68,7 @@ private const val SWIPE_THRESHOLD_DP = 96f
  * @param onRated 每次提交评分后回调：评分记录与该卡更新后的 FSRS 状态（回炉作答为 null），由 app 写入数据库。
  * @param onUndo 撤销上一次评分后回调，由 app 撤销对应的数据库写入。
  * @param onNextGroup 小结页「再来一组」；为空时用同一批卡片再来一组（原型行为）。
+ * @param onSourceClick 点卡片背面的课堂溯源，查看原始板书 [FR-REV-10]。
  * @param onDone 小结页点「今天到这」时回调，为空则不显示该按钮。
  */
 @Composable
@@ -79,6 +80,7 @@ fun ReviewDeckScreen(
     onRated: (RatingRecord, MemoryState?) -> Unit = { _, _ -> },
     onUndo: () -> Unit = {},
     onNextGroup: (() -> Unit)? = null,
+    onSourceClick: (DeckCard) -> Unit = {},
     onDone: (() -> Unit)? = null,
 ) {
     var session by remember(cards) {
@@ -126,6 +128,7 @@ fun ReviewDeckScreen(
                 onFlip = { session = session.flip() },
                 onChoose = { session = session.choose(it) },
                 onSwipe = { update(session.rate(it, System.currentTimeMillis())) },
+                onSourceClick = onSourceClick,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -180,6 +183,7 @@ private fun FlipCard(
     onFlip: () -> Unit,
     onChoose: (Int) -> Unit,
     onSwipe: (Rating) -> Unit,
+    onSourceClick: (DeckCard) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (session.current == null) return
@@ -232,7 +236,7 @@ private fun FlipCard(
                 FrontFace(session, onChoose)
             } else {
                 // 背面内容再翻转 180°，避免文字镜像。
-                Box(Modifier.fillMaxSize().graphicsLayer { rotationY = 180f }) { BackFace(session) }
+                Box(Modifier.fillMaxSize().graphicsLayer { rotationY = 180f }) { BackFace(session, onSourceClick) }
             }
         }
         if (pending != null) {
@@ -279,7 +283,10 @@ private fun FrontFace(
 }
 
 @Composable
-private fun BackFace(session: ReviewSession) {
+private fun BackFace(
+    session: ReviewSession,
+    onSourceClick: (DeckCard) -> Unit,
+) {
     val deck = session.current ?: return
     val answer = session.choiceAnswer
     val choices = session.choices
@@ -304,7 +311,12 @@ private fun BackFace(session: ReviewSession) {
         Text(deck.pointSummary, style = MaterialTheme.typography.bodyLarge)
         HorizontalDivider(Modifier.padding(vertical = 4.dp))
         deck.sourceLabel?.let {
-            Text("📷 $it  ▸", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
+            Text(
+                "📷 $it  ▸",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.clickable { onSourceClick(deck) }.padding(vertical = 4.dp),
+            )
         }
         val neighbors =
             listOfNotNull(

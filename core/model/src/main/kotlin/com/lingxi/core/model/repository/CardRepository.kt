@@ -56,6 +56,8 @@ data class ReviewLogEntry(
 /**
  * 复习页需要的一张卡：卡片 + 所属课程与知识点 + 记忆状态 + 图谱邻居名称。
  * 一次查询拼好，界面不必再逐张查库。
+ *
+ * @property capturedAtMillis 卡片来源素材的拍摄时间（`capture.created_at`），用于背面「11月18日 板书 第3页」。
  */
 data class StudyCard(
     val card: ReviewCard,
@@ -64,6 +66,7 @@ data class StudyCard(
     val memory: CardMemory?,
     val prerequisites: List<String> = emptyList(),
     val related: List<String> = emptyList(),
+    val capturedAtMillis: Long? = null,
 )
 
 /**
@@ -98,6 +101,9 @@ interface CardRepository {
         cards: List<ReviewCard>,
         nowMillis: Long,
     )
+
+    /** 来源属于这些捕获的卡片数，笔记详情显示「本节生成 N 张卡片」。 */
+    suspend fun countFromCaptures(captureIds: Set<String>): Int
 
     /** 卡片总数（不含已删除），用于判断是否需要写入种子数据。 */
     suspend fun cardCount(): Int

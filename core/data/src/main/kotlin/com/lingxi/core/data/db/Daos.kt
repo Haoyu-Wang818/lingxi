@@ -58,6 +58,9 @@ interface LessonDao {
     @Insert
     suspend fun insert(lesson: LessonEntity)
 
+    @Query("SELECT * FROM lesson WHERE course_id = :courseId ORDER BY started_at DESC LIMIT 1")
+    suspend fun latestForCourse(courseId: String): LessonEntity?
+
     @Query("SELECT * FROM lesson WHERE id = :id")
     suspend fun byId(id: String): LessonEntity?
 }
@@ -70,12 +73,34 @@ interface CaptureDao {
     @Query("SELECT * FROM capture WHERE lesson_id = :lessonId ORDER BY created_at")
     suspend fun byLesson(lessonId: String): List<CaptureEntity>
 
+    @Query("SELECT * FROM capture WHERE id = :id")
+    suspend fun byId(id: String): CaptureEntity?
+
+    @Query("SELECT * FROM capture WHERE id IN (:ids)")
+    suspend fun byIds(ids: Collection<String>): List<CaptureEntity>
+
+    @Query("UPDATE capture SET status = :status WHERE id = :id")
+    suspend fun setStatus(
+        id: String,
+        status: String,
+    )
+
     @Insert
     suspend fun insertText(text: RecognizedTextEntity)
 
     @Query("SELECT * FROM recognized_text WHERE capture_id = :captureId")
     suspend fun texts(captureId: String): List<RecognizedTextEntity>
 }
+
+/** 笔记列表一行。 */
+data class NoteSummaryRow(
+    @androidx.room.ColumnInfo(name = "lesson_id") val lessonId: String,
+    @androidx.room.ColumnInfo(name = "course_name") val courseName: String,
+    val title: String,
+    val status: String,
+    @androidx.room.ColumnInfo(name = "updated_at") val updatedAt: Long,
+    @androidx.room.ColumnInfo(name = "capture_count") val captureCount: Int,
+)
 
 @Dao
 interface NoteDao {
@@ -84,6 +109,14 @@ interface NoteDao {
 
     @Query("SELECT * FROM note WHERE lesson_id = :lessonId")
     suspend fun byLesson(lessonId: String): NoteEntity?
+
+    @Query(
+        "SELECT n.lesson_id, c.name AS course_name, n.title, n.status, n.updated_at, " +
+            "(SELECT COUNT(*) FROM capture p WHERE p.lesson_id = n.lesson_id) AS capture_count " +
+            "FROM note n JOIN lesson l ON n.lesson_id = l.id JOIN course c ON l.course_id = c.id " +
+            "ORDER BY n.updated_at DESC",
+    )
+    suspend fun summaries(): List<NoteSummaryRow>
 }
 
 @Dao
@@ -160,6 +193,9 @@ interface CardDao {
 
     @Query("SELECT COUNT(*) FROM card WHERE status != 'DELETED'")
     suspend fun count(): Int
+
+    @Query("SELECT source_ref_json FROM card WHERE status != 'DELETED' AND source_ref_json IS NOT NULL")
+    suspend fun sourceRefs(): List<String>
 
     @Query("SELECT * FROM card WHERE id = :id")
     suspend fun byId(id: String): CardEntity?
@@ -244,6 +280,15 @@ interface PendingTaskDao {
 
     @Query("SELECT * FROM pending_task WHERE next_attempt_at <= :now ORDER BY next_attempt_at")
     suspend fun ready(now: Long): List<PendingTaskEntity>
+
+    @Query("SELECT * FROM pending_task ORDER BY next_attempt_at")
+    suspend fun all(): List<PendingTaskEntity>
+
+    @Query("SELECT * FROM pending_task WHERE id = :id")
+    suspend fun byId(id: String): PendingTaskEntity?
+
+    @androidx.room.Update
+    suspend fun update(task: PendingTaskEntity)
 
     @Query("DELETE FROM pending_task WHERE id = :id")
     suspend fun delete(id: String)

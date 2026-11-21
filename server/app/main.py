@@ -17,10 +17,13 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from . import prompts
+from .cards import Card, Rejection
 from .config import Settings, get_settings
-from .extraction import PROMPT_VERSION, Extraction, extract_knowledge
+from .extraction import Point
 from .guard import DEFAULT_CODES, GatewayError, device_key, error_body, limiter, log_call
 from .llm import LlmClient, LlmError, LlmInvalidOutputError, LlmNotConfiguredError, is_configured
+from .organize import OrganizeResult, cards_for_points, organize
 from .relay import MAX_MESSAGE_CHARS, Role, hub
 
 VERSION = "0.2.0"
@@ -100,7 +103,12 @@ def rate_limit(
         raise GatewayError(429, "RATE_LIMITED", "请求过于频繁，请稍后再试", headers=headers)
 
 
+def get_fast_llm(settings: SettingsDep) -> LlmClient:
+    return LlmClient(app.state.http, settings.llm_base_url, settings.llm_api_key, settings.llm_model_fast)
+
+
 LlmDep = Annotated[LlmClient, Depends(get_llm)]
+FastLlmDep = Annotated[LlmClient, Depends(get_fast_llm)]
 AI_GUARDS = [Depends(require_token), Depends(rate_limit)]
 
 
@@ -134,18 +142,34 @@ class Segment(BaseModel):
 
 
 class ExtractRequest(BaseModel):
-    """兼容两种请求：旧版只有 `text`；04-api.md 1.4 节的新版带来源 id 的 `segments`。"""
+    """兼容两种请求：旧版只有 `text`；04-api.md 1.4 节的新版带来源 id 的 `segments`。
+
+    `with_cards` 为真时同时为新知识点出卡，手机端一次请求拿到笔记、知识点、关系和卡片。
+    """
 
     text: str = ""
     segments: list[Segment] = []
     course_name: str = ""
     lesson_id: str = ""
     existing_titles: list[str] = []
+    with_cards: bool = False
+
+    def segment_texts(self) -> dict[str, str]:
+        texts = {s.source_id: s.text for s in self.segments}
+        if self.text:
+            texts["text"] = self.text
+        return texts
+
+    def source_ids(self) -> set[str]:
+        ids = {s.source_id for s in self.segments}
+        if self.text:
+            ids.add("text")
+        return ids
 
     def note_text(self) -> str:
         parts = [f"[{s.source_id}] {s.text}" for s in self.segments]
         if self.text:
-            parts.insert(0, self.text)
+            parts.insert(0, f"[text] {self.text}")
         header = f"课程：{self.course_name}\n" if self.course_name else ""
         if self.existing_titles:
             header += "已有知识点（同义时请复用这些名称）：" + "、".join(self.existing_titles[:200]) + "\n"
@@ -171,19 +195,58 @@ async def chat(req: ChatRequest, llm: LlmDep) -> ChatResponse:
     return ChatResponse(text=reply.text, model=reply.model, latency_ms=reply.latency_ms)
 
 
-@app.post("/v1/extract", response_model=Extraction, dependencies=AI_GUARDS)
-async def extract(req: ExtractRequest, llm: LlmDep, response: Response) -> Extraction:
-    text = req.note_text()
+@app.post("/v1/extract", response_model=OrganizeResult, dependencies=AI_GUARDS)
+async def extract(req: ExtractRequest, llm: FastLlmDep, response: Response) -> OrganizeResult:
     if not (req.text or req.segments):
         raise GatewayError(400, "BAD_REQUEST", "text 与 segments 不能同时为空")
+    text = req.note_text()
     if len(text) > MAX_TEXT_CHARS:
         raise GatewayError(413, "TEXT_TOO_LONG", f"文本超过 {MAX_TEXT_CHARS} 字，请分段后重试")
+    start = time.perf_counter()
     try:
-        result = await extract_knowledge(llm, text)
+        result = await organize(
+            llm, text, req.source_ids(), req.course_name, req.with_cards, segments=req.segment_texts()
+        )
     except LlmError as e:
         raise map_llm_error(e) from e
-    response.headers["X-Prompt-Version"] = PROMPT_VERSION
+    result.latency_ms = int((time.perf_counter() - start) * 1000)
+    response.headers["X-Prompt-Version"] = result.prompt_version
     return result
+
+
+class CardPoint(BaseModel):
+    id: str = Field(min_length=1, max_length=64)
+    title: str = Field(min_length=1, max_length=40)
+    summary: str = ""
+    context: str = ""
+    source_ids: list[str] = []
+
+
+class CardsRequest(BaseModel):
+    course_name: str = ""
+    points: list[CardPoint] = Field(min_length=1, max_length=12)
+    per_point: int = Field(default=3, ge=1, le=3)
+    types: list[str] = []
+    require_watch_variant: bool = True
+
+
+class CardsResponse(BaseModel):
+    cards: list[Card]
+    rejected: list[Rejection]
+    prompt_version: str
+
+
+@app.post("/v1/cards", response_model=CardsResponse, dependencies=AI_GUARDS)
+async def cards(req: CardsRequest, llm: FastLlmDep, response: Response) -> CardsResponse:
+    """知识点 → 卡片（FR-GW-02）。卡片继承知识点的 source_ids；没有来源的知识点不出卡（NO_SOURCE）。"""
+    points = [Point(id=p.id, title=p.title, summary=p.summary, source_ids=p.source_ids) for p in req.points]
+    context = "\n".join(f"{p.title}：{p.context}" for p in req.points if p.context)
+    try:
+        got, rejected = await cards_for_points(llm, points, context, req.course_name)
+    except LlmError as e:
+        raise map_llm_error(e) from e
+    response.headers["X-Prompt-Version"] = prompts.CARDS
+    return CardsResponse(cards=got, rejected=rejected, prompt_version=prompts.CARDS)
 
 
 @app.websocket("/v1/relay/{pair_code}/{role}")

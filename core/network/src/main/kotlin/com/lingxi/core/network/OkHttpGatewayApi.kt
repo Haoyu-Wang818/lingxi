@@ -62,7 +62,32 @@ class OkHttpGatewayApi(
         return call("POST", "/v1/chat", body) { o -> ChatReply(o.getString("text"), o.getString("model"), o.optLong("latency_ms")) }
     }
 
-    override suspend fun extract(req: ExtractRequest): Result<Extraction> {
+    override suspend fun extract(req: ExtractRequest): Result<Extraction> =
+        call("POST", "/v1/extract", extractBody(req, withCards = false)) { o -> parseExtraction(o) }
+
+    override suspend fun organize(req: ExtractRequest): Result<OrganizeResult> =
+        call("POST", "/v1/extract", extractBody(req, withCards = true)) { o ->
+            val note =
+                o.optJSONObject("note")?.let { n ->
+                    val title = n.str("title")
+                    val markdown = n.str("markdown")
+                    if (title != null && markdown != null) GeneratedNote(title, markdown) else null
+                }
+            val cards = parseCards(o)
+            OrganizeResult(
+                note = note,
+                extraction = parseExtraction(o),
+                cards = cards.cards.map { GeneratedCard(it, cards.sourceIds[it.id] ?: emptyList()) },
+                rejected = cards.rejected,
+                promptVersion = o.optString("prompt_version", ""),
+                latencyMs = o.optLong("latency_ms"),
+            )
+        }
+
+    private fun extractBody(
+        req: ExtractRequest,
+        withCards: Boolean,
+    ): JSONObject {
         val segments =
             JSONArray(
                 req.segments.map { s ->
@@ -77,13 +102,12 @@ class OkHttpGatewayApi(
                         }
                 },
             )
-        val body =
-            JSONObject()
-                .put("course_name", req.courseName)
-                .put("lesson_id", req.lessonId)
-                .put("segments", segments)
-                .put("existing_titles", JSONArray(req.existingTitles))
-        return call("POST", "/v1/extract", body) { o -> parseExtraction(o) }
+        return JSONObject()
+            .put("course_name", req.courseName)
+            .put("lesson_id", req.lessonId)
+            .put("segments", segments)
+            .put("existing_titles", JSONArray(req.existingTitles))
+            .put("with_cards", withCards)
     }
 
     override suspend fun generateCards(req: CardsRequest): Result<CardsResponse> {
@@ -195,24 +219,27 @@ class OkHttpGatewayApi(
         }
 
         internal fun parseCards(o: JSONObject): CardsResponse {
+            val sources = mutableMapOf<String, List<String>>()
             val cards =
-                o.getJSONArray("cards").objects().mapIndexedNotNull { i, c ->
+                (o.optJSONArray("cards") ?: JSONArray()).objects().mapIndexedNotNull { i, c ->
                     val type = runCatching { CardType.valueOf(c.getString("type")) }.getOrNull() ?: return@mapIndexedNotNull null
                     val options = c.optJSONArray("options")?.strings() ?: emptyList()
+                    val id = c.str("id") ?: "gen-$i-${UUID.randomUUID()}"
+                    sources[id] = c.optJSONArray("source_ids")?.strings() ?: emptyList()
                     ReviewCard(
-                        id = c.str("id") ?: "gen-$i-${UUID.randomUUID()}",
+                        id = id,
                         knowledgePointId = c.getString("point_id"),
                         question = c.getString("question"),
                         answer = c.getString("answer"),
                         type = type,
                         options = options,
-                        correctIndex = if (c.has("correct_index")) c.getInt("correct_index") else null,
+                        correctIndex = if (c.isNull("correct_index")) null else c.optInt("correct_index"),
                         watchPrompt = c.str("watch_prompt"),
                         watchAnswer = c.str("watch_answer"),
                     )
                 }
             val rejected = o.optJSONArray("rejected")?.objects()?.map { it.getString("point_id") to it.getString("reason") } ?: emptyList()
-            return CardsResponse(cards, rejected, o.optString("prompt_version", ""))
+            return CardsResponse(cards, rejected, o.optString("prompt_version", ""), sources)
         }
 
         private const val DEFAULT_CONFIDENCE = 0.8

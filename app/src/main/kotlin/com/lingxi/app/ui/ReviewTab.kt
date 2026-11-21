@@ -26,8 +26,11 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Date
+import java.util.Locale
 
 /** 一组最多出几张卡（设计为每组 5–8 张，FR-REV-14）。 */
 private const val GROUP_SIZE = 8
@@ -43,7 +46,10 @@ private const val SECONDS_PER_CARD = 15
  * 杀掉进程重启后进度仍在 [FR-REV-04]、[FR-REV-05]、[FR-REV-08]。
  */
 @Composable
-fun ReviewTab(container: AppContainer) {
+fun ReviewTab(
+    container: AppContainer,
+    onOpenSource: (captureId: String, box: List<Int>, title: String) -> Unit = { _, _, _ -> },
+) {
     val scope = rememberCoroutineScope()
     var deck by remember { mutableStateOf<List<DeckCard>?>(null) }
     var dueToday by remember { mutableIntStateOf(0) }
@@ -101,15 +107,18 @@ fun ReviewTab(container: AppContainer) {
                     }
                 },
                 onNextGroup = { loadKey++ },
+                onSourceClick = { deck ->
+                    deck.card.sourceRef?.let { ref -> onOpenSource(ref.captureId, ref.box, "${deck.courseName} · ${deck.pointTitle}") }
+                },
             )
         }
     }
 }
 
-/** 卡片背面的课堂溯源文字，如「11月18日 板书 第3页」。 */
+/** 卡片背面的课堂溯源文字，如「11月18日 板书 第3页」；日期来自 capture 表的拍摄时间。 */
 private fun sourceLabel(card: StudyCard): String? {
     val ref = card.card.sourceRef ?: return null
-    val date = SeedData.captureDates[ref.captureId]
+    val date = card.capturedAtMillis?.let { SimpleDateFormat("M月d日", Locale.CHINA).format(Date(it)) }
     val page = ref.page?.let { "板书 第${it}页" } ?: "课堂素材"
     return listOfNotNull(date, page).joinToString(" ")
 }

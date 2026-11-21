@@ -21,6 +21,11 @@ androidx-test-core = "1.7.0"
 junit4 = "4.13.2"
 kover = "0.9.11"
 org-json = "20260814"
+onnxruntime = "1.31.1"
+camerax = "1.6.2"
+work = "2.11.2"
+androidx-test-runner = "1.7.0"
+androidx-test-ext = "1.3.0"
 
 [libraries]
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -55,6 +60,15 @@ androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-te
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 # Android 自带 org.json，但本地单测里是空实现；测试时用同名开源实现。
 org-json = { module = "org.json:json", version.ref = "org-json" }
+onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
+camerax-core = { module = "androidx.camera:camera-core", version.ref = "camerax" }
+camerax-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "camerax" }
+camerax-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camerax" }
+camerax-view = { module = "androidx.camera:camera-view", version.ref = "camerax" }
+work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-ext" }
 # Google 专有组件，非开源；只允许 sync-datalayer 模块引入（ADR 0007）。
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "play-services-wearable" }
 
