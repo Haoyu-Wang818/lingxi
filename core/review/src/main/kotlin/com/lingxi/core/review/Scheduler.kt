@@ -6,8 +6,7 @@ import java.time.Duration
 /**
  * 卡片调度的纯函数接口，供 `feature:review` 与仓库层使用，便于替换算法或在测试中注入假实现。
  *
- * 现有 [FsrsScheduler] 尚未实现本接口；I3 迭代补齐 [predictIntervals] 与出卡队列后再接入，
- * 以免本阶段改动已验证的 FSRS 计算。
+ * 默认实现为 [FsrsScheduler]；复习会话 [ReviewSession] 只依赖本接口。
  */
 interface Scheduler {
     /** 根据本次评分更新记忆状态并计算下次到期时间 [FR-REV-02]。新卡传 null。 */

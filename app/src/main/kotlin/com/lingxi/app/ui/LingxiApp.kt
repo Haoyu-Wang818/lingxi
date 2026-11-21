@@ -1,5 +1,6 @@
 package com.lingxi.app.ui
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountTree
@@ -15,8 +16,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,8 +28,8 @@ import androidx.navigation.compose.rememberNavController
 import com.lingxi.app.ui.screens.CaptureScreen
 import com.lingxi.app.ui.screens.ContextLabScreen
 import com.lingxi.app.ui.screens.GraphScreen
-import com.lingxi.app.ui.screens.ReviewScreen
 import com.lingxi.app.ui.screens.WatchScreen
+import com.lingxi.feature.review.ReviewDeckScreen
 
 /** 底部导航的五个页面。 */
 private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
@@ -68,10 +71,25 @@ fun LingxiApp() {
             NavHost(nav, startDestination = Tab.CAPTURE.route, modifier = Modifier.padding(padding)) {
                 composable(Tab.CAPTURE.route) { CaptureScreen() }
                 composable(Tab.GRAPH.route) { GraphScreen() }
-                composable(Tab.REVIEW.route) { ReviewScreen() }
+                composable(Tab.REVIEW.route) { ReviewTab() }
                 composable(Tab.CONTEXT.route) { ContextLabScreen() }
                 composable(Tab.WATCH.route) { WatchScreen() }
             }
         }
+    }
+}
+
+/** 复习页：顶部「今日 N 张，约 M 分钟」+ 卡片复习 [FR-REV-07]、[FR-REV-08]。 */
+@Composable
+private fun ReviewTab() {
+    val deck = remember { SampleData.deck() }
+    Column {
+        Text(
+            text = SampleData.todayLine(deck.size),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+        )
+        ReviewDeckScreen(cards = deck, streakDays = SampleData.STREAK_DAYS)
     }
 }
