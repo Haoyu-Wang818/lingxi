@@ -61,7 +61,7 @@ async def make_note(llm: LlmClient, text: str, allowed_sources: set[str]) -> Not
     """生成结构化笔记；失败时返回 None，不影响知识点与卡片（笔记可稍后重试）。"""
     try:
         prompt = prompts.load(prompts.NOTE)
-        reply = await llm.chat(prompt, text, max_tokens=900, json_mode=True, temperature=0.2)
+        reply = await llm.chat(prompt, text, max_tokens=1500, json_mode=True, temperature=0.2)
         data = _json(reply.text)
         title, markdown = str(data.get("title", "")).strip(), str(data.get("markdown", "")).strip()
         if not title or not markdown:
@@ -72,7 +72,8 @@ async def make_note(llm: LlmClient, text: str, allowed_sources: set[str]) -> Not
                 ids = [s for s in kp.get("source_ids", []) if s in allowed_sources]
                 key_points.append(KeyPoint(text=str(kp["text"]).strip(), source_ids=ids))
         return Note(title=title[:40], markdown=markdown, key_points=key_points)
-    except LlmError:
+    except LlmError as e:
+        logger.warning("note call failed error=%s %s", type(e).__name__, str(e)[:120])
         return None
 
 
@@ -102,12 +103,16 @@ async def make_cards(
                 temperature=0.5,
             )
             raw = _json(reply.text).get("cards", [])
-        except LlmError:
+        except LlmError as e:
+            # 只记错误类型与摘要（不含用户内容），便于排查上游限流或超时。
+            name = type(e).__name__
+            logger.warning("cards call failed points=%d error=%s %s", len(todo), name, str(e)[:80])
             raw = []
         got, bad = select_cards(raw, {p.id: sources[p.id] for p in todo})
         kept += got
         rejected += bad
-        missing = points_missing_watch_type(kept, [p.id for p in points])
+        # 没有来源的知识点重试也无法出卡，不计入重试。
+        missing = points_missing_watch_type(kept, [p.id for p in points if p.source_ids])
         if not missing or attempt == 1:
             rejected += [Rejection(point_id=p, reason="NO_WATCH_TYPE") for p in missing]
             break
@@ -123,6 +128,7 @@ async def organize(
     allowed_sources: set[str],
     course: str = "",
     with_cards: bool = True,
+    segments: dict[str, str] | None = None,
 ) -> OrganizeResult:
     """整理一节课。知识点抽取失败时整体失败（由调用方映射为 422 / 502）；笔记或个别出卡失败时降级返回。"""
     gate = asyncio.Semaphore(MAX_PARALLEL_CALLS)
@@ -135,7 +141,7 @@ async def organize(
     start = time.perf_counter()
     note_task = asyncio.create_task(limited(make_note, llm, text, allowed_sources))
     try:
-        extraction: Extraction = await limited(extract_knowledge, llm, text, allowed_sources)
+        extraction: Extraction = await limited(extract_knowledge, llm, text, allowed_sources, segments)
     except BaseException:
         note_task.cancel()
         raise

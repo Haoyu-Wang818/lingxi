@@ -300,3 +300,32 @@ def test_watch_variant_with_cloze_markup_is_stripped():
     """[FR-WEAR-08] 手表不显示挖空标记，带 {{c1::}} 的手表版本被清空。"""
     c, _ = validate_card(card(watch_prompt="拉格朗日余项 {{c1::}}", watch_answer="(x-x0)^(n+1)"), SOURCES)
     assert c.watch_prompt is None and c.watch_answer is None
+
+
+def test_points_without_valid_sources_fall_back_to_title_match(client):
+    """[FR-REV-10] 模型给出的来源 id 无效时，按知识点名称在原文中查找来源，卡片仍可溯源。"""
+    calls: list[str] = []
+    extract = {
+        "points": [{"id": "taylor", "title": "泰勒公式", "summary": "逼近", "source_ids": ["bogus"]}],
+        "edges": [],
+    }
+    llm = scripted(extract, NOTE, {"taylor": [tf("taylor", "泰勒公式用多项式逼近函数。")]}, calls)
+    app.dependency_overrides[get_llm] = app.dependency_overrides[get_fast_llm] = lambda: llm
+    body = client.post("/v1/extract", json={"segments": segments(), "with_cards": True}).json()
+    assert body["points"][0]["source_ids"] == ["cap-1#L1"]
+    assert len(body["cards"]) == 1
+
+
+def test_point_without_any_source_is_not_retried(client):
+    """没有来源的知识点不出卡，也不白白重试。"""
+    calls: list[str] = []
+    extract = {
+        "points": [{"id": "x", "title": "原文没有的知识点", "summary": "", "source_ids": []}],
+        "edges": [],
+    }
+    llm = scripted(extract, NOTE, {"x": [tf("x", "q")]}, calls)
+    app.dependency_overrides[get_llm] = app.dependency_overrides[get_fast_llm] = lambda: llm
+    body = client.post("/v1/extract", json={"segments": segments(), "with_cards": True}).json()
+    assert calls.count("cards:x") == 1
+    assert body["cards"] == []
+    assert {"point_id": "x", "reason": "NO_SOURCE"} in body["rejected"]

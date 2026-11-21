@@ -169,11 +169,9 @@ class CapturePipeline(
         val course = courses.course(courseId)
         val lessonCaptures = captures.captures(lessonId)
         val linesByCapture = lessonCaptures.associate { c -> c.id to captures.recognized(c.id).flatMap { it.lines } }
-        // 每行一个文本段，id 为「捕获id#L行号」，模型返回的来源 id 可以精确定位到原图文字框。
-        val segments =
-            linesByCapture.flatMap { (captureId, lines) ->
-                lines.mapIndexed { i, line -> TextSegment("$captureId#L${i + 1}", "OCR", line.text, page = 1) }
-            }
+        // 每行一个文本段，用短 id「L序号」（模型能原样复述；长 UUID 容易被改写），本地再映射回照片与行，定位原图文字框。
+        val located = linesByCapture.flatMap { (captureId, lines) -> lines.map { captureId to it } }
+        val segments = located.mapIndexed { i, (_, line) -> TextSegment("L${i + 1}", "OCR", line.text, page = 1) }
         if (segments.isEmpty()) return OrganizeOutcome.Failed("没有识别出文字")
         val chars = segments.sumOf { it.text.length }
         val start = clock()
@@ -199,7 +197,7 @@ class CapturePipeline(
         val newCards =
             organized.cards.mapNotNull { generated ->
                 val kp = merge.idMap[generated.card.knowledgePointId] ?: return@mapNotNull null
-                generated.card.copy(id = UUID.randomUUID().toString(), knowledgePointId = kp, sourceRef = sourceRef(generated.sourceIds, linesByCapture))
+                generated.card.copy(id = UUID.randomUUID().toString(), knowledgePointId = kp, sourceRef = sourceRef(generated.sourceIds, located))
             }
         cards.upsertCards(newCards, now)
         val note = organized.note
@@ -221,15 +219,11 @@ class CapturePipeline(
     /** 来源：第一个来源段所在的照片，文字框取该照片上全部来源行的外接矩形。 */
     private fun sourceRef(
         sourceIds: List<String>,
-        linesByCapture: Map<String, List<TextLine>>,
+        located: List<Pair<String, TextLine>>,
     ): SourceRef? {
-        val parsed = sourceIds.mapNotNull { id -> id.split("#L").takeIf { it.size == 2 }?.let { it[0] to it[1].toIntOrNull() } }
-        val captureId = parsed.firstOrNull()?.first ?: return null
-        val boxes =
-            parsed
-                .filter { it.first == captureId }
-                .mapNotNull { (_, line) -> line?.let { linesByCapture[captureId]?.getOrNull(it - 1)?.box } }
-                .filter { it.size == 4 }
+        val lines = sourceIds.mapNotNull { id -> id.removePrefix("L").toIntOrNull()?.let { located.getOrNull(it - 1) } }
+        val captureId = lines.firstOrNull()?.first ?: return null
+        val boxes = lines.filter { it.first == captureId }.map { it.second.box }.filter { it.size == 4 }
         val box =
             if (boxes.isEmpty()) emptyList() else listOf(boxes.minOf { it[0] }, boxes.minOf { it[1] }, boxes.maxOf { it[2] }, boxes.maxOf { it[3] })
         return SourceRef(captureId, page = 1, box = box)

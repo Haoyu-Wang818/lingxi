@@ -154,6 +154,12 @@ class ExtractRequest(BaseModel):
     existing_titles: list[str] = []
     with_cards: bool = False
 
+    def segment_texts(self) -> dict[str, str]:
+        texts = {s.source_id: s.text for s in self.segments}
+        if self.text:
+            texts["text"] = self.text
+        return texts
+
     def source_ids(self) -> set[str]:
         ids = {s.source_id for s in self.segments}
         if self.text:
@@ -198,7 +204,9 @@ async def extract(req: ExtractRequest, llm: FastLlmDep, response: Response) -> O
         raise GatewayError(413, "TEXT_TOO_LONG", f"文本超过 {MAX_TEXT_CHARS} 字，请分段后重试")
     start = time.perf_counter()
     try:
-        result = await organize(llm, text, req.source_ids(), req.course_name, req.with_cards)
+        result = await organize(
+            llm, text, req.source_ids(), req.course_name, req.with_cards, segments=req.segment_texts()
+        )
     except LlmError as e:
         raise map_llm_error(e) from e
     result.latency_ms = int((time.perf_counter() - start) * 1000)

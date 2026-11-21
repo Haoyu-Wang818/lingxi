@@ -39,7 +39,18 @@ class Extraction(BaseModel):
     prompt_version: str = PROMPT_VERSION
 
 
-def parse_extraction(raw: str, allowed_sources: set[str] | None = None) -> Extraction:
+def _fallback_sources(point: "Point", segments: dict[str, str]) -> list[str]:
+    """模型没给出可用来源时，按知识点名称在原文中查找出现的段落，保证卡片能溯源（04-api.md 1.5 节）。"""
+    key = "".join(point.title.split())
+    hits = [sid for sid, text in segments.items() if key and key in "".join(text.split())]
+    return hits[:3]
+
+
+def parse_extraction(
+    raw: str,
+    allowed_sources: set[str] | None = None,
+    segments: dict[str, str] | None = None,
+) -> Extraction:
     """解析并清洗大模型输出。不是 JSON 对象或一个合法知识点都没有时抛出 LlmInvalidOutputError。
 
     [allowed_sources] 给出时，知识点的 source_ids 只保留请求中出现过的来源 id（04-api.md 1.4 节）。
@@ -59,6 +70,8 @@ def parse_extraction(raw: str, allowed_sources: set[str] | None = None) -> Extra
             continue
         if allowed_sources is not None:
             p.source_ids = [s for s in dict.fromkeys(p.source_ids) if s in allowed_sources]
+            if not p.source_ids and segments:
+                p.source_ids = _fallback_sources(p, segments)
         points.setdefault(p.id, p)
 
     edges: list[Edge] = []
@@ -80,7 +93,10 @@ def parse_extraction(raw: str, allowed_sources: set[str] | None = None) -> Extra
 
 
 async def extract_knowledge(
-    llm: LlmClient, note_text: str, allowed_sources: set[str] | None = None
+    llm: LlmClient,
+    note_text: str,
+    allowed_sources: set[str] | None = None,
+    segments: dict[str, str] | None = None,
 ) -> Extraction:
     """调用大模型抽取；输出不合规时重试一次，仍失败抛出 LlmInvalidOutputError（FR-GW-01）。"""
     last: LlmInvalidOutputError | None = None
@@ -89,7 +105,7 @@ async def extract_knowledge(
             prompts.load(prompts.EXTRACT), note_text, max_tokens=1200, json_mode=True, temperature=0.2
         )
         try:
-            return parse_extraction(reply.text, allowed_sources)
+            return parse_extraction(reply.text, allowed_sources, segments)
         except LlmInvalidOutputError as e:
             last = e
     assert last is not None
