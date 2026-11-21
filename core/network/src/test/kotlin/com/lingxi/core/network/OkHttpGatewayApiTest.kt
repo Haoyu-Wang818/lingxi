@@ -13,14 +13,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
 
 /** 网关客户端：请求格式、响应解析、超时与错误映射 [FR-GW-01][FR-GW-05][FR-AI-03]。 */
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
 class OkHttpGatewayApiTest {
     private val server = MockWebServer()
     private lateinit var api: OkHttpGatewayApi

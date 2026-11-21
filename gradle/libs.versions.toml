@@ -20,6 +20,7 @@ robolectric = "4.18.1"
 androidx-test-core = "1.7.0"
 junit4 = "4.13.2"
 kover = "0.9.11"
+org-json = "20260814"
 
 [libraries]
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
@@ -52,6 +53,8 @@ datastore-preferences = { module = "androidx.datastore:datastore-preferences", v
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
+# Android 自带 org.json，但本地单测里是空实现；测试时用同名开源实现。
+org-json = { module = "org.json:json", version.ref = "org-json" }
 # Google 专有组件，非开源；只允许 sync-datalayer 模块引入（ADR 0007）。
 play-services-wearable = { module = "com.google.android.gms:play-services-wearable", version.ref = "play-services-wearable" }
 

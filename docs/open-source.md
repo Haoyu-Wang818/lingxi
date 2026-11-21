@@ -18,6 +18,7 @@
 | AndroidX DataStore（Preferences） | 设置项：隐私开关、学期开始日期、设备 id | Apache-2.0 |
 | Robolectric、AndroidX Test、JUnit 4 | 在 Mac 本机 JVM 上运行数据库与网关客户端测试，无需模拟器 | MIT / Apache-2.0 / EPL-1.0 |
 | Kotlinx Kover | 仓库层测试覆盖率报告 | Apache-2.0 |
+| JSON-java（org.json） | 网关客户端本地单测中替代 Android 自带的 org.json | Public Domain |
 
 ## 非开源依赖
 
