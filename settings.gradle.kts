@@ -28,6 +28,7 @@ include(":core:ai")
 include(":core:review")
 include(":core:sync")
 include(":context-engine")
+include(":core:quality")
 
 // Android 模块：需要 Android SDK（Android Studio 自带，或 CI 中安装）。
 // 没有 SDK 的环境（例如只跑算法测试的服务器）会自动跳过，避免整个构建失败。
