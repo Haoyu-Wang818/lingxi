@@ -21,17 +21,24 @@ REQ_ROW = re.compile(r"^\| ((?:FR|NFR)-[A-Z]+-\d{2}) \|(.+)$")
 
 # 需求到迭代的分配，与开发计划保持一致；未列出的 Could 需求归入「复赛」。
 ITERATION = {
+    # I1 数据层与基础设施
     "I1": ["FR-COURSE-01", "FR-COURSE-02", "FR-COURSE-03", "FR-AI-01", "FR-AI-02", "FR-AI-03",
            "FR-GW-05", "FR-SET-01"],
+    # I2 拍照捕获 → 笔记 → 卡片生成
     "I2": ["FR-CAP-01", "FR-CAP-02", "FR-CAP-03", "FR-CAP-06", "FR-NOTE-01", "FR-NOTE-03",
-           "FR-NOTE-04", "FR-NOTE-06", "FR-KG-01", "FR-AI-04", "FR-GW-01", "FR-GW-06"],
-    "I3": ["FR-CAP-04", "FR-NOTE-02", "FR-NOTE-05", "FR-KG-02", "FR-KG-03", "FR-KG-04",
+           "FR-NOTE-04", "FR-NOTE-06", "FR-KG-01", "FR-AI-04", "FR-GW-01", "FR-GW-02", "FR-GW-06",
+           "FR-REV-01", "FR-REV-10", "FR-REV-11"],
+    # I3 手机卡片式复习（核心交互）
+    "I3": ["FR-REV-02", "FR-REV-03", "FR-REV-04", "FR-REV-05", "FR-REV-07", "FR-REV-08",
+           "FR-REV-09", "FR-REV-12"],
+    # I4 录音与知识图谱
+    "I4": ["FR-CAP-04", "FR-NOTE-02", "FR-NOTE-05", "FR-KG-02", "FR-KG-03", "FR-KG-04",
            "FR-KG-05", "FR-KG-06", "FR-AI-05"],
-    "I4": ["FR-REV-01", "FR-REV-02", "FR-REV-03", "FR-REV-04", "FR-REV-05", "FR-WEAR-01",
-           "FR-WEAR-02", "FR-WEAR-03", "FR-WEAR-04", "FR-WEAR-05", "FR-SYNC-01", "FR-SYNC-02",
-           "FR-SYNC-03", "FR-GW-02", "FR-GW-04"],
+    # I5 情境推送与手表（加分项）
     "I5": ["FR-CTX-01", "FR-CTX-02", "FR-CTX-03", "FR-CTX-04", "FR-CTX-05", "FR-CTX-06",
-           "FR-WEAR-07", "FR-SYNC-04", "FR-SET-02", "FR-SET-03", "FR-SET-04"],
+           "FR-CTX-08", "FR-CTX-09", "FR-WEAR-01", "FR-WEAR-02", "FR-WEAR-03", "FR-WEAR-04",
+           "FR-WEAR-05", "FR-WEAR-07", "FR-WEAR-08", "FR-SYNC-01", "FR-SYNC-02", "FR-SYNC-03",
+           "FR-SYNC-04", "FR-GW-04", "FR-SET-02", "FR-SET-03", "FR-SET-04"],
 }
 ITER_OF = {req: it for it, reqs in ITERATION.items() for req in reqs}
 
