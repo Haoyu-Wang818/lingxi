@@ -183,4 +183,40 @@ class OkHttpGatewayApiTest {
             respond(200, "<html>proxy</html>")
             assertTrue(api.health().exceptionOrNull() is GatewayError.Upstream)
         }
+
+    /** [FR-NOTE-03][FR-REV-01] organize：一次请求解析笔记、知识点、关系与带来源的卡片，请求带 with_cards。 */
+    @Test
+    fun organizeParsesNotePointsAndCards() =
+        runBlocking {
+            respond(
+                200,
+                """{"note":{"title":"泰勒公式","markdown":"## 要点\n- 逼近","key_points":[]},
+                   "points":[{"id":"taylor","title":"泰勒公式","summary":"逼近","source_ids":["cap-1#L1"]}],
+                   "edges":[],
+                   "cards":[{"point_id":"taylor","type":"TRUE_FALSE","question":"可导必连续。","answer":"正确",
+                             "options":null,"correct_index":null,"watch_prompt":"可导必连续？","watch_answer":"正确",
+                             "source_ids":["cap-1#L1","cap-1#L2"]}],
+                   "rejected":[{"point_id":"taylor","reason":"NO_WATCH_TYPE"}],
+                   "prompt_version":"extract-v2+note-v1+cards-v1","latency_ms":8800}""",
+            )
+            val req = ExtractRequest("高等数学", "lesson-1", listOf(TextSegment("cap-1#L1", "OCR", "泰勒公式")))
+            val r = api.organize(req).getOrThrow()
+            assertEquals(GeneratedNote("泰勒公式", "## 要点\n- 逼近"), r.note)
+            assertEquals(listOf("cap-1#L1"), r.extraction.points.single().sourceIds)
+            assertEquals(listOf("cap-1#L1", "cap-1#L2"), r.cards.single().sourceIds)
+            assertEquals("可导必连续？", r.cards.single().card.watchPrompt)
+            assertEquals(8800L, r.latencyMs)
+            assertEquals(listOf("taylor" to "NO_WATCH_TYPE"), r.rejected)
+            assertTrue(JSONObject(server.takeRequest().body!!.utf8()).getBoolean("with_cards"))
+        }
+
+    /** 笔记缺失或不完整时为 null，没有卡片字段时卡片为空。 */
+    @Test
+    fun organizeToleratesMissingNoteAndCards() =
+        runBlocking {
+            respond(200, """{"note":null,"points":[{"id":"a","title":"A"}],"edges":[]}""")
+            val r = api.organize(ExtractRequest("c", "l", emptyList())).getOrThrow()
+            assertNull(r.note)
+            assertTrue(r.cards.isEmpty())
+        }
 }
