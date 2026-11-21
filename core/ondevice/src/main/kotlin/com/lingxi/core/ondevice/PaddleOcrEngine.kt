@@ -38,6 +38,12 @@ class PaddleOcrEngine(
     fun modelsAvailable(): Boolean =
         runCatching { appContext.assets.list(assetDir)?.toSet()?.containsAll(MODEL_FILES) == true }.getOrDefault(false)
 
+    /** 预先加载模型（约 1 秒），在用户打开拍照页时调用，拍完后识别不再等待加载。 */
+    suspend fun warmUp() =
+        withContext(Dispatchers.Default) {
+            lock.withLock { if (modelsAvailable()) load() }
+        }
+
     private fun load() {
         if (det != null) return
         val options = OrtSession.SessionOptions().apply { setIntraOpNumThreads(4) }

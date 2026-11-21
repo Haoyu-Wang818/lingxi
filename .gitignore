@@ -17,3 +17,4 @@ __pycache__/
 *.keystore
 # 端侧 OCR 模型由 scripts/fetch_models.sh 下载，不进版本库
 core/ondevice/src/main/assets/ocr/
+.DS_Store

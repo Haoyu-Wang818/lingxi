@@ -21,8 +21,8 @@ from .llm import LlmClient, LlmError, LlmInvalidOutputError
 
 logger = logging.getLogger("lingxi.gateway")
 
-POINTS_PER_CARD_CALL = 2
-MAX_PARALLEL_CALLS = 4
+POINTS_PER_CARD_CALL = 1
+MAX_PARALLEL_CALLS = 6
 
 
 class KeyPoint(BaseModel):

@@ -196,7 +196,7 @@ def segments():
 
 
 def test_organize_returns_note_points_edges_and_cards(client):
-    """[FR-NOTE-03][FR-KG-01][FR-REV-01] 一次请求得到笔记、知识点、关系与卡片。
+    """[FR-NOTE-03][FR-KG-01][FR-REV-01][FR-GW-06] 一次请求得到笔记、知识点、关系与卡片，响应带提示词版本。
 
     来源 id 只保留请求中出现过的。
     """
@@ -227,13 +227,8 @@ def test_organize_returns_note_points_edges_and_cards(client):
     assert all(c["source_ids"] for c in body["cards"])
     assert body["prompt_versions"] == {"extract": "extract-v2", "note": "note-v1", "cards": "cards-v1"}
     assert resp.headers["X-Prompt-Version"] == "extract-v2+note-v1+cards-v1"
-    # 3 个知识点按每组 2 个分成 2 次出卡调用。
-    assert sorted(calls) == ["cards:maclaurin,peano", "cards:taylor", "extract", "note"] or sorted(calls) == [
-        "cards:peano",
-        "cards:taylor,maclaurin",
-        "extract",
-        "note",
-    ]
+    # 每个知识点一次出卡调用，并行进行。
+    assert sorted(calls) == ["cards:maclaurin", "cards:peano", "cards:taylor", "extract", "note"]
     peano_cards = [c for c in body["cards"] if c["point_id"] == "peano"]
     assert any(c["watch_prompt"] is None for c in peano_cards)
 

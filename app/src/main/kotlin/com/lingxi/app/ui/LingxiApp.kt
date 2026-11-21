@@ -224,6 +224,8 @@ private fun CameraRoute(
     val courseId by container.selectedCourseId.collectAsState()
     var courseName by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(courseId) { courseName = courseId?.let { container.courses.course(it)?.name } }
+    // 打开拍照页时就在后台加载 OCR 模型，拍完立即识别。
+    LaunchedEffect(Unit) { container.scope.launch { container.ocr.warmUp() } }
     val id = courseId ?: return
     CaptureFlowScreen(
         outputDir = container.pipeline.captureDir(),
