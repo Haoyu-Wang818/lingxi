@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.config import Settings, get_settings
 from app.extraction import parse_extraction
+from app.guard import limiter
 from app.llm import LlmClient, LlmError
 from app.main import app, get_llm
 
@@ -24,7 +25,8 @@ def fake_llm(content: str, status: int = 200) -> LlmClient:
 
 @pytest.fixture
 def client():
-    app.dependency_overrides[get_settings] = lambda: Settings(gateway_token="secret")
+    app.dependency_overrides[get_settings] = lambda: Settings(gateway_token="secret", _env_file=None)
+    limiter.reset()
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
@@ -34,7 +36,11 @@ AUTH = {"Authorization": "Bearer secret"}
 
 
 def test_health(client):
-    assert client.get("/health").json() == {"status": "ok"}
+    body = client.get("/health").json()
+    assert body["status"] == "ok"
+    assert body["version"] == "0.2.0"
+    assert body["llm_configured"] is False
+    assert body["model"] == "qwen-plus"
 
 
 def test_chat_requires_token(client):
@@ -70,7 +76,10 @@ def test_extract_endpoint(client):
     assert resp.status_code == 200
     body = resp.json()
     assert [p["id"] for p in body["points"]] == ["derivative", "taylor"]
-    assert body["edges"][0] == {"from": "derivative", "to": "taylor", "relation": "PREREQUISITE"}
+    edge = {"from": "derivative", "to": "taylor", "relation": "PREREQUISITE", "confidence": 0.8}
+    assert body["edges"][0] == edge
+    assert body["prompt_version"] == "extract-v1"
+    assert resp.headers["X-Prompt-Version"] == "extract-v1"
 
 
 def test_parse_extraction_filters_invalid_items():

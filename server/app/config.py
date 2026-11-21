@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     llm_model: str = "qwen-plus"
     llm_timeout_seconds: float = 30.0
     gateway_token: str = ""
+    # 每设备每分钟 AI 请求上限，超出返回 429（04-api.md 1.1 节，FR-GW-05）。
+    rate_limit_per_minute: int = 20
 
 
 @lru_cache

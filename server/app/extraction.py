@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, ValidationError
 
-from .llm import LlmClient, LlmError
+from .llm import LlmClient, LlmInvalidOutputError
 
 Relation = Literal["PREREQUISITE", "PART_OF", "EXAMPLE_OF", "RELATED"]
 
@@ -30,21 +30,28 @@ class Edge(BaseModel):
     from_id: str = Field(alias="from")
     to_id: str = Field(alias="to")
     relation: Relation
+    confidence: float = Field(default=0.8, ge=0.0, le=1.0)
 
     model_config = {"populate_by_name": True}
+
+
+PROMPT_VERSION = "extract-v1"
 
 
 class Extraction(BaseModel):
     points: list[Point]
     edges: list[Edge]
+    prompt_version: str = PROMPT_VERSION
 
 
 def parse_extraction(raw: str) -> Extraction:
-    """解析并清洗大模型输出。无法解析时抛出 LlmError。"""
+    """解析并清洗大模型输出。不是 JSON 对象或一个合法知识点都没有时抛出 LlmInvalidOutputError。"""
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as e:
-        raise LlmError("大模型未返回合法 JSON") from e
+        raise LlmInvalidOutputError("大模型未返回合法 JSON") from e
+    if not isinstance(data, dict):
+        raise LlmInvalidOutputError("大模型输出不是 JSON 对象")
 
     points: dict[str, Point] = {}
     for item in data.get("points", []):
@@ -67,9 +74,19 @@ def parse_extraction(raw: str) -> Extraction:
         seen.add(key)
         edges.append(e)
 
+    if not points:
+        raise LlmInvalidOutputError("大模型输出中没有合法的知识点")
     return Extraction(points=list(points.values()), edges=edges)
 
 
 async def extract_knowledge(llm: LlmClient, note_text: str) -> Extraction:
-    reply = await llm.chat(SYSTEM_PROMPT, note_text, max_tokens=1500, json_mode=True)
-    return parse_extraction(reply.text)
+    """调用大模型抽取；输出不合规时重试一次，仍失败抛出 LlmInvalidOutputError（FR-GW-01）。"""
+    last: LlmInvalidOutputError | None = None
+    for _ in range(2):
+        reply = await llm.chat(SYSTEM_PROMPT, note_text, max_tokens=1500, json_mode=True, temperature=0.2)
+        try:
+            return parse_extraction(reply.text)
+        except LlmInvalidOutputError as e:
+            last = e
+    assert last is not None
+    raise last
