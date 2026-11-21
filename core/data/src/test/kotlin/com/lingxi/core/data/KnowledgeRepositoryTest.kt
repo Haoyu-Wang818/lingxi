@@ -55,8 +55,9 @@ class KnowledgeRepositoryTest : DbTestBase() {
                         ),
                 )
             val result = repo.mergeExtraction(lesson, extraction)
-            assertEquals(mapOf("p1" to "taylor", "p2" to "kp-1"), result.idMap)
-            assertEquals(setOf("kp-1"), result.createdIds)
+            // kp-1 已用作课次 id，新知识点得到下一个 id。
+            assertEquals(mapOf("p1" to "taylor", "p2" to "kp-2"), result.idMap)
+            assertEquals(setOf("kp-2"), result.createdIds)
             assertEquals(2, result.rejectedEdges)
             assertEquals(4, repo.graph("math").points.size)
             assertEquals(3, repo.graph("math").edges.size)

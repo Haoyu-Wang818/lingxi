@@ -43,7 +43,7 @@ class CourseRepositoryTest : DbTestBase() {
             assertEquals("高等数学（上）", repo.course("math")?.name)
             assertNull(repo.course("math")?.teacher)
             assertEquals(t0, repo.course("math")?.createdAtMillis)
-            repo.saveCourse(math.copy(id = "la", name = "线性代数", createdAtMillis = 2))
+            repo.saveCourse(math.copy(id = "la", name = "线性代数", createdAtMillis = t0 + 1))
             assertEquals(listOf("math", "la"), repo.courses().map { it.id })
             repo.deleteCourse("la")
             assertEquals(listOf("math"), repo.courses().map { it.id })
