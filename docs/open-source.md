@@ -14,6 +14,11 @@
 | FSRS-4.5 算法与默认参数（open-spaced-repetition） | 间隔重复，`core:review` 中按公开公式自行实现 | MIT |
 | FastAPI、Uvicorn、httpx、Pydantic、websockets | 云端网关与手表中继 | MIT / BSD-3-Clause |
 | pytest、ruff | 网关测试与检查 | MIT |
+| AndroidX Room（含 room-testing）与 KSP | 手机端本地数据库 `lingxi.db`、编译期 SQL 校验与迁移测试（ADR 0006） | Apache-2.0 |
+| AndroidX DataStore（Preferences） | 设置项：隐私开关、学期开始日期、设备 id | Apache-2.0 |
+| Robolectric、AndroidX Test、JUnit 4 | 在 Mac 本机 JVM 上运行数据库与网关客户端测试，无需模拟器 | MIT / Apache-2.0 / EPL-1.0 |
+| Kotlinx Kover | 仓库层测试覆盖率报告 | Apache-2.0 |
+| JSON-java（org.json） | 网关客户端本地单测中替代 Android 自带的 org.json | Public Domain |
 
 ## 非开源依赖
 

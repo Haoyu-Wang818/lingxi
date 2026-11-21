@@ -17,7 +17,9 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -28,9 +30,16 @@ import com.lingxi.app.ui.SampleData
  * 原型阶段按钮尚未接入 CameraX 与录音，P1 阶段实现。
  */
 @Composable
-fun CaptureScreen() {
+fun CaptureScreen(
+    onOpenCourses: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("课堂捕获", style = MaterialTheme.typography.headlineSmall)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("课堂捕获", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            TextButton(onClick = onOpenCourses) { Text("课程与课表") }
+            TextButton(onClick = onOpenSettings) { Text("设置") }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             CaptureButton("拍板书", Icons.Outlined.CameraAlt)
             CaptureButton("录音", Icons.Outlined.Mic)

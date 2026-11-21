@@ -1,15 +1,18 @@
 package com.lingxi.core.network
 
+import com.lingxi.core.model.ErrorCoded
+
 /**
  * 网关错误，与 04-api.md 1.2 节的错误码一一对应 [FR-GW-06]。
  *
  * [retryable] 决定是否进入待办队列按退避重试 [FR-AI-05]。
  */
 sealed class GatewayError(
-    val code: String,
+    override val code: String,
     val retryable: Boolean,
     message: String,
-) : Exception(message) {
+) : Exception(message),
+    ErrorCoded {
     /** 400 参数非法，不重试。 */
     class BadRequest(
         message: String,

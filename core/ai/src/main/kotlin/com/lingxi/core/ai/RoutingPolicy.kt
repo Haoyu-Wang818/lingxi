@@ -38,6 +38,7 @@ fun interface RoutingPolicy {
 /**
  * 默认的端云协同路由策略。规则按优先级依次判断，命中即返回：
  *
+ * 0. 含隐私内容且用户未允许该类任务上云 → 只在端侧执行且不回退云端；端侧做不了则不执行 [FR-SET-01]。
  * 1. 只有一侧有能力的任务直接走那一侧（断网且只能上云 → 不可用）。
  * 2. 断网 → 端侧。
  * 3. 含隐私内容且端侧能做 → 端侧，不让原文离开手机。
@@ -58,6 +59,14 @@ class DefaultRoutingPolicy(
     ): RouteDecision {
         val type = task.type
         val online = device.network != NetworkType.NONE
+
+        if (task.containsPersonalData && type.cloudCapable && type !in device.allowCloudFor) {
+            return if (type.onDeviceCapable) {
+                RouteDecision.Run(Route.ON_DEVICE, null, listOf("隐私设置不允许上传，只在端侧处理"))
+            } else {
+                RouteDecision.Unavailable(listOf("${type.name} 需要上传云端，但隐私设置不允许，请在设置中开启上传"))
+            }
+        }
 
         if (!type.cloudCapable) {
             return RouteDecision.Run(Route.ON_DEVICE, null, listOf("${type.name} 只在端侧计算"))

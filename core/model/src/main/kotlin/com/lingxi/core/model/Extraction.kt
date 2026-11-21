@@ -36,3 +36,8 @@ data class ScoredEdge(
     val relation: RelationType,
     val confidence: Double,
 )
+
+/** 带稳定错误码的异常（如网关错误码 `LLM_UPSTREAM`），执行记录据此写入 `error_code` [FR-AI-04]。 */
+interface ErrorCoded {
+    val code: String
+}
