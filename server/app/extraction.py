@@ -9,21 +9,16 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, ValidationError
 
+from . import prompts
 from .llm import LlmClient, LlmInvalidOutputError
 
 Relation = Literal["PREREQUISITE", "PART_OF", "EXAMPLE_OF", "RELATED"]
-
-SYSTEM_PROMPT = """你是大学课程助教。阅读一段课堂笔记，抽取其中的知识点及其关系。
-只输出 JSON，格式为：
-{"points": [{"id": "英文小写短横线标识", "title": "知识点名称", "summary": "一到两句话解释"}],
- "edges": [{"from": "id", "to": "id", "relation": "PREREQUISITE|PART_OF|EXAMPLE_OF|RELATED"}]}
-PREREQUISITE 表示学习 to 之前需要先掌握 from。知识点控制在 3 到 12 个。"""
-
 
 class Point(BaseModel):
     id: str = Field(min_length=1, max_length=64)
     title: str = Field(min_length=1, max_length=40)
     summary: str = Field(default="", max_length=200)
+    source_ids: list[str] = []
 
 
 class Edge(BaseModel):
@@ -35,7 +30,7 @@ class Edge(BaseModel):
     model_config = {"populate_by_name": True}
 
 
-PROMPT_VERSION = "extract-v1"
+PROMPT_VERSION = prompts.EXTRACT
 
 
 class Extraction(BaseModel):
@@ -44,8 +39,11 @@ class Extraction(BaseModel):
     prompt_version: str = PROMPT_VERSION
 
 
-def parse_extraction(raw: str) -> Extraction:
-    """解析并清洗大模型输出。不是 JSON 对象或一个合法知识点都没有时抛出 LlmInvalidOutputError。"""
+def parse_extraction(raw: str, allowed_sources: set[str] | None = None) -> Extraction:
+    """解析并清洗大模型输出。不是 JSON 对象或一个合法知识点都没有时抛出 LlmInvalidOutputError。
+
+    [allowed_sources] 给出时，知识点的 source_ids 只保留请求中出现过的来源 id（04-api.md 1.4 节）。
+    """
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as e:
@@ -59,6 +57,8 @@ def parse_extraction(raw: str) -> Extraction:
             p = Point.model_validate(item)
         except ValidationError:
             continue
+        if allowed_sources is not None:
+            p.source_ids = [s for s in dict.fromkeys(p.source_ids) if s in allowed_sources]
         points.setdefault(p.id, p)
 
     edges: list[Edge] = []
@@ -79,13 +79,17 @@ def parse_extraction(raw: str) -> Extraction:
     return Extraction(points=list(points.values()), edges=edges)
 
 
-async def extract_knowledge(llm: LlmClient, note_text: str) -> Extraction:
+async def extract_knowledge(
+    llm: LlmClient, note_text: str, allowed_sources: set[str] | None = None
+) -> Extraction:
     """调用大模型抽取；输出不合规时重试一次，仍失败抛出 LlmInvalidOutputError（FR-GW-01）。"""
     last: LlmInvalidOutputError | None = None
     for _ in range(2):
-        reply = await llm.chat(SYSTEM_PROMPT, note_text, max_tokens=1500, json_mode=True, temperature=0.2)
+        reply = await llm.chat(
+            prompts.load(prompts.EXTRACT), note_text, max_tokens=1200, json_mode=True, temperature=0.2
+        )
         try:
-            return parse_extraction(reply.text)
+            return parse_extraction(reply.text, allowed_sources)
         except LlmInvalidOutputError as e:
             last = e
     assert last is not None

@@ -8,7 +8,7 @@ from app.config import Settings, get_settings
 from app.extraction import parse_extraction
 from app.guard import limiter
 from app.llm import LlmClient, LlmError
-from app.main import app, get_llm
+from app.main import app, get_fast_llm, get_llm
 
 
 def fake_llm(content: str, status: int = 200) -> LlmClient:
@@ -21,6 +21,11 @@ def fake_llm(content: str, status: int = 200) -> LlmClient:
 
     http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     return LlmClient(http, "https://llm.example/v1", "test-key", "qwen-test")
+
+
+def use_llm(factory) -> None:
+    """让普通模型与快速模型都使用同一个假客户端。"""
+    app.dependency_overrides[get_llm] = app.dependency_overrides[get_fast_llm] = factory
 
 
 @pytest.fixture
@@ -44,12 +49,12 @@ def test_health(client):
 
 
 def test_chat_requires_token(client):
-    app.dependency_overrides[get_llm] = lambda: fake_llm("hi")
+    use_llm(lambda: fake_llm("hi"))
     assert client.post("/v1/chat", json={"user": "你好"}).status_code == 401
 
 
 def test_chat_forwards_to_llm(client):
-    app.dependency_overrides[get_llm] = lambda: fake_llm("导数是瞬时变化率")
+    use_llm(lambda: fake_llm("导数是瞬时变化率"))
     resp = client.post("/v1/chat", json={"user": "什么是导数"}, headers=AUTH)
     assert resp.status_code == 200
     assert resp.json()["text"] == "导数是瞬时变化率"
@@ -57,7 +62,7 @@ def test_chat_forwards_to_llm(client):
 
 
 def test_upstream_failure_maps_to_502(client):
-    app.dependency_overrides[get_llm] = lambda: fake_llm("", status=500)
+    use_llm(lambda: fake_llm("", status=500))
     assert client.post("/v1/chat", json={"user": "x"}, headers=AUTH).status_code == 502
 
 
@@ -71,15 +76,15 @@ def test_extract_endpoint(client):
             "edges": [{"from": "derivative", "to": "taylor", "relation": "PREREQUISITE"}],
         }
     )
-    app.dependency_overrides[get_llm] = lambda: fake_llm(content)
+    use_llm(lambda: fake_llm(content))
     resp = client.post("/v1/extract", json={"text": "今天讲泰勒公式……"}, headers=AUTH)
     assert resp.status_code == 200
     body = resp.json()
     assert [p["id"] for p in body["points"]] == ["derivative", "taylor"]
     edge = {"from": "derivative", "to": "taylor", "relation": "PREREQUISITE", "confidence": 0.8}
     assert body["edges"][0] == edge
-    assert body["prompt_version"] == "extract-v1"
-    assert resp.headers["X-Prompt-Version"] == "extract-v1"
+    assert body["prompt_version"] == "extract-v2+note-v1"
+    assert resp.headers["X-Prompt-Version"] == "extract-v2+note-v1"
 
 
 def test_parse_extraction_filters_invalid_items():

@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.config import Settings, get_settings
 from app.guard import RateLimiter, device_key, limiter
 from app.llm import LlmClient, LlmError, LlmNotConfiguredError, is_configured
-from app.main import app, get_llm
+from app.main import app, get_fast_llm, get_llm
 
 DASHSCOPE = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
@@ -121,6 +121,11 @@ async def test_non_json_reply_maps_to_llm_error():
 # ---- 网关接口：错误格式、限流、未配置 ----
 
 
+def use_llm(factory) -> None:
+    """让普通模型与快速模型都使用同一个假客户端。"""
+    app.dependency_overrides[get_llm] = app.dependency_overrides[get_fast_llm] = factory
+
+
 @pytest.fixture
 def client():
     app.dependency_overrides[get_settings] = lambda: Settings(
@@ -137,7 +142,7 @@ AUTH = {"Authorization": "Bearer secret"}
 
 def test_not_configured_returns_503_with_error_body(client):
     """[FR-GW-05] 没有 key 时 /v1/chat 返回 503 LLM_NOT_CONFIGURED，错误体带请求 id。"""
-    app.dependency_overrides[get_llm] = lambda: qwen(ok("x"), api_key="")
+    use_llm(lambda: qwen(ok("x"), api_key=""))
     resp = client.post("/v1/chat", json={"user": "你好"}, headers={**AUTH, "X-Request-Id": "req-42"})
     assert resp.status_code == 503
     assert resp.json() == {
@@ -165,7 +170,7 @@ def test_validation_error_maps_to_400(client):
 
 def test_rate_limit_per_device_returns_429(client):
     """[FR-GW-05] 同一设备超过每分钟上限返回 429 与 Retry-After；其他设备不受影响。"""
-    app.dependency_overrides[get_llm] = lambda: qwen(ok("好"))
+    use_llm(lambda: qwen(ok("好")))
     phone = {**AUTH, "X-Device-Id": "phone-1"}
     for _ in range(3):
         assert client.post("/v1/chat", json={"user": "x"}, headers=phone).status_code == 200
@@ -178,16 +183,22 @@ def test_rate_limit_per_device_returns_429(client):
 
 
 def test_extract_accepts_segments_and_retries_invalid_output(client):
-    """[FR-GW-01] segments 格式请求；第一次输出不合规时重试一次。"""
-    valid = json.dumps({"points": [{"id": "taylor", "title": "泰勒公式"}], "edges": []})
-    replies = iter(["不是 JSON", valid])
-    prompts: list[str] = []
+    """[FR-GW-01] segments 格式请求；知识点抽取第一次输出不合规时重试一次（笔记调用并行进行）。"""
+    point = {"id": "taylor", "title": "泰勒公式", "source_ids": ["cap-1"]}
+    valid = json.dumps({"points": [point], "edges": []})
+    extract_replies = iter(["不是 JSON", valid])
+    extract_prompts: list[str] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        prompts.append(json.loads(request.content)["messages"][-1]["content"])
-        return httpx.Response(200, json={"choices": [{"message": {"content": next(replies)}}]})
+        messages = json.loads(request.content)["messages"]
+        if "抽取知识点" in messages[0]["content"]:
+            extract_prompts.append(messages[-1]["content"])
+            content = next(extract_replies)
+        else:
+            content = json.dumps({"title": "泰勒公式", "markdown": "## 要点\n- 多项式逼近"})
+        return httpx.Response(200, json={"choices": [{"message": {"content": content}}]})
 
-    app.dependency_overrides[get_llm] = lambda: qwen(handler)
+    use_llm(lambda: qwen(handler))
     body = {
         "course_name": "高等数学",
         "segments": [{"source_id": "cap-1", "text": "泰勒公式 f(x)=…"}],
@@ -196,19 +207,21 @@ def test_extract_accepts_segments_and_retries_invalid_output(client):
     resp = client.post("/v1/extract", json=body, headers=AUTH)
     assert resp.status_code == 200
     assert resp.json()["points"][0]["id"] == "taylor"
-    assert len(prompts) == 2
-    assert "[cap-1] 泰勒公式" in prompts[0] and "课程：高等数学" in prompts[0] and "导数" in prompts[0]
+    assert resp.json()["note"]["title"] == "泰勒公式"
+    assert len(extract_prompts) == 2
+    first = extract_prompts[0]
+    assert "[cap-1] 泰勒公式" in first and "课程：高等数学" in first and "导数" in first
 
 
 def test_extract_invalid_twice_returns_422(client):
-    app.dependency_overrides[get_llm] = lambda: qwen(ok("[]"))
+    use_llm(lambda: qwen(ok("[]")))
     resp = client.post("/v1/extract", json={"text": "笔记"}, headers=AUTH)
     assert resp.status_code == 422
     assert resp.json()["error"]["code"] == "LLM_INVALID_OUTPUT"
 
 
 def test_extract_rejects_empty_and_too_long(client):
-    app.dependency_overrides[get_llm] = lambda: qwen(ok("{}"))
+    use_llm(lambda: qwen(ok("{}")))
     assert client.post("/v1/extract", json={}, headers=AUTH).status_code == 400
     resp = client.post("/v1/extract", json={"text": "字" * 30_001}, headers=AUTH)
     assert resp.status_code == 413
@@ -217,7 +230,7 @@ def test_extract_rejects_empty_and_too_long(client):
 
 def test_call_log_has_no_content(client, caplog):
     """[FR-GW-05] 调用日志只有路径、设备哈希、状态码与耗时，不含用户文本与令牌（NFR-SEC-02）。"""
-    app.dependency_overrides[get_llm] = lambda: qwen(ok("导数是瞬时变化率"))
+    use_llm(lambda: qwen(ok("导数是瞬时变化率")))
     with caplog.at_level("INFO", logger="lingxi.gateway"):
         client.post("/v1/chat", json={"user": "我的私密笔记"}, headers=AUTH)
     text = caplog.text

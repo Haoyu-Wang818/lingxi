@@ -11,6 +11,12 @@ from collections import deque
 from fastapi import HTTPException
 
 logger = logging.getLogger("lingxi.gateway")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    # uvicorn 默认只配置自己的日志器，这里为网关调用日志加一个输出到终端的处理器。
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s"))
+    logger.addHandler(_handler)
 
 
 class GatewayError(HTTPException):
