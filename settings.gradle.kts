@@ -1,5 +1,13 @@
 pluginManagement {
     repositories {
+        // Room 的 Gradle 插件（导出 schema）只发布在 Google 仓库。
+        google {
+            content {
+                includeGroupByRegex("androidx.*")
+                includeGroupByRegex("com\\.android.*")
+                includeGroupByRegex("com\\.google.*")
+            }
+        }
         mavenCentral()
         gradlePluginPortal()
     }

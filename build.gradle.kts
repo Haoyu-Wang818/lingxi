@@ -17,6 +17,9 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.room) apply false
+    alias(libs.plugins.kover) apply false
 }
 
 // 所有 JVM 模块共用的约定：Java 17、JUnit 5、ktlint。
