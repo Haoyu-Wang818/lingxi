@@ -47,6 +47,8 @@ import com.lingxi.core.review.CardFace
 import com.lingxi.core.review.CardText
 import com.lingxi.core.review.DeckCard
 import com.lingxi.core.review.FsrsScheduler
+import com.lingxi.core.review.MemoryState
+import com.lingxi.core.review.RatingRecord
 import com.lingxi.core.review.ReviewSession
 import com.lingxi.core.review.Scheduler
 import com.lingxi.core.review.SessionSummary
@@ -61,8 +63,11 @@ private const val SWIPE_THRESHOLD_DP = 96f
  *
  * 只负责展示与手势，全部状态转换交给 [ReviewSession]，因此界面逻辑无需单测即可保证评分正确。
  *
- * @param cards 本组卡片，按出卡顺序。
+ * @param cards 本组卡片，按出卡顺序；为空时显示「今天复习完了」。
  * @param streakDays 含今天的连续学习天数，用于组末小结。
+ * @param onRated 每次提交评分后回调：评分记录与该卡更新后的 FSRS 状态（回炉作答为 null），由 app 写入数据库。
+ * @param onUndo 撤销上一次评分后回调，由 app 撤销对应的数据库写入。
+ * @param onNextGroup 小结页「再来一组」；为空时用同一批卡片再来一组（原型行为）。
  * @param onDone 小结页点「今天到这」时回调，为空则不显示该按钮。
  */
 @Composable
@@ -71,23 +76,44 @@ fun ReviewDeckScreen(
     modifier: Modifier = Modifier,
     streakDays: Int = 0,
     scheduler: Scheduler = remember { FsrsScheduler() },
+    onRated: (RatingRecord, MemoryState?) -> Unit = { _, _ -> },
+    onUndo: () -> Unit = {},
+    onNextGroup: (() -> Unit)? = null,
     onDone: (() -> Unit)? = null,
 ) {
     var session by remember(cards) {
         mutableStateOf(ReviewSession.start(cards, scheduler, System.currentTimeMillis(), streakDays))
     }
 
+    // 所有状态转换都经过这里：评分记录增加 → 持久化；减少 → 撤销。
+    val update: (ReviewSession) -> Unit = { next ->
+        val before = session.records.size
+        session = next
+        when {
+            next.records.size > before -> next.records.last().let { onRated(it, if (it.relearn) null else next.memory[it.cardId]) }
+            next.records.size < before -> onUndo()
+        }
+    }
+
+    if (cards.isEmpty()) {
+        AllDone(streakDays, modifier)
+        return
+    }
+
     Column(modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        TopBar(session, onUndo = { session = session.undo() })
+        TopBar(session, onUndo = { update(session.undo()) })
 
         val summary = session.summary()
         if (summary != null) {
             SummaryPage(
                 summary = summary,
                 onAgain = {
-                    // 原型：再来一组沿用同一批卡片，并带上本组更新后的记忆状态。
-                    val next = cards.map { it.copy(memory = session.memory[it.card.id] ?: it.memory) }
-                    session = ReviewSession.start(next, scheduler, System.currentTimeMillis(), streakDays)
+                    if (onNextGroup != null) {
+                        onNextGroup()
+                    } else {
+                        val next = cards.map { it.copy(memory = session.memory[it.card.id] ?: it.memory) }
+                        session = ReviewSession.start(next, scheduler, System.currentTimeMillis(), streakDays)
+                    }
                 },
                 onDone = onDone,
             )
@@ -99,11 +125,27 @@ fun ReviewDeckScreen(
                 session = session,
                 onFlip = { session = session.flip() },
                 onChoose = { session = session.choose(it) },
-                onSwipe = { session = session.rate(it, System.currentTimeMillis()) },
+                onSwipe = { update(session.rate(it, System.currentTimeMillis())) },
                 modifier = Modifier.weight(1f),
             )
         }
-        BottomActions(session) { session = it }
+        BottomActions(session, update)
+    }
+}
+
+@Composable
+private fun AllDone(
+    streakDays: Int,
+    modifier: Modifier,
+) {
+    Column(
+        modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("今天的卡片都复习完了 🎉", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text("到期的卡片会在该复习的时候再出现。", color = MaterialTheme.colorScheme.outline)
+        if (streakDays > 0) Text("🔥 连续学习 $streakDays 天", style = MaterialTheme.typography.titleMedium)
     }
 }
 
