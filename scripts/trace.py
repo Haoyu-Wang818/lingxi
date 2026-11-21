@@ -30,7 +30,7 @@ ITERATION = {
            "FR-REV-01", "FR-REV-10", "FR-REV-11"],
     # I3 手机卡片式复习（核心交互）
     "I3": ["FR-REV-02", "FR-REV-03", "FR-REV-04", "FR-REV-05", "FR-REV-07", "FR-REV-08",
-           "FR-REV-09", "FR-REV-12"],
+           "FR-REV-09", "FR-REV-12", "FR-REV-13", "FR-REV-14", "FR-REV-15"],
     # I4 录音与知识图谱
     "I4": ["FR-CAP-04", "FR-NOTE-02", "FR-NOTE-05", "FR-KG-02", "FR-KG-03", "FR-KG-04",
            "FR-KG-05", "FR-KG-06", "FR-AI-05"],
