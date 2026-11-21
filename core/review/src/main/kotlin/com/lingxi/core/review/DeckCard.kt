@@ -37,7 +37,7 @@ data class Choices(
 
 /** 卡片文本的展示规则：挖空、选项、间隔格式化。全部为纯函数，便于单测。 */
 object CardText {
-    private val CLOZE = Regex("""\{\{c1::(.+?)}}""")
+    private val CLOZE = Regex("""\{\{c1::(.+?)\}\}""") // Android 的 ICU 正则要求转义右花括号
 
     /** 挖空题正面：把 `{{c1::…}}` 换成下划线；其他题型原样返回。 */
     fun front(card: ReviewCard): String =
