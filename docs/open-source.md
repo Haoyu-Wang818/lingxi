@@ -18,6 +18,9 @@
 | AndroidX DataStore（Preferences） | 设置项：隐私开关、学期开始日期、设备 id | Apache-2.0 |
 | Robolectric、AndroidX Test、JUnit 4 | 在 Mac 本机 JVM 上运行数据库与网关客户端测试，无需模拟器 | MIT / Apache-2.0 / EPL-1.0 |
 | Kotlinx Kover | 仓库层测试覆盖率报告 | Apache-2.0 |
+| PaddleOCR PP-OCRv4 mobile 检测与识别模型（ONNX 版本来自 RapidOCR 项目）及字典 ppocr_keys_v1 | 端侧板书文字识别，模型由 `scripts/fetch_models.sh` 下载（ADR 0003） | Apache-2.0 |
+| ONNX Runtime Android | 端侧运行 OCR 模型 | MIT |
+| CameraX、WorkManager、AndroidX Test Runner | 拍照、断网后的后台重试、仪器测试 | Apache-2.0 |
 | JSON-java（org.json） | 网关客户端本地单测中替代 Android 自带的 org.json | Public Domain |
 
 ## 非开源依赖
@@ -30,7 +33,6 @@
 
 | 组件 | 用途 | 许可证 |
 | --- | --- | --- |
-| PaddleOCR（PP-OCR 模型，转 ONNX 后由 ONNX Runtime 运行） | 端侧文字识别 | Apache-2.0 / MIT |
 | sherpa-onnx | 端侧离线语音识别 | Apache-2.0 |
 | bge-small-zh | 文本向量 | MIT |
 | MNN / MNN-LLM | 端侧推理引擎 | Apache-2.0 |
