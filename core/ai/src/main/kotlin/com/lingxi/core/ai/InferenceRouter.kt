@@ -46,12 +46,14 @@ class RouteUnavailableException(
  * 它先向 [policy] 询问路线，执行主路线；主路线抛出异常且存在备用路线时，自动重试备用路线。
  *
  * @param clock 返回当前毫秒时间，测试时可替换。
+ * @param observer 每次调用结束后收到完整记录，应用用它写入 `ai_execution` 表 [FR-AI-04]。
  */
 class InferenceRouter(
     private val policy: RoutingPolicy,
     backends: List<ModelBackend>,
     private val deviceState: DeviceStateProvider,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val observer: RouteObserver? = null,
 ) {
     private val backendByRoute: Map<Route, ModelBackend> = backends.associateBy { it.route }
 
@@ -64,6 +66,21 @@ class InferenceRouter(
         request: CompletionRequest,
     ): RoutedResult {
         val start = clock()
+        val result = route(task, request, start)
+        observer?.let {
+            // 记录失败不能影响业务结果。
+            runCatching { it.onRouted(result, start) }.exceptionOrNull()?.let { e ->
+                if (e is kotlinx.coroutines.CancellationException) throw e
+            }
+        }
+        return result
+    }
+
+    private suspend fun route(
+        task: AiTask,
+        request: CompletionRequest,
+        start: Long,
+    ): RoutedResult {
         val decision = policy.decide(task, deviceState.current())
 
         if (decision is RouteDecision.Unavailable) {
@@ -98,4 +115,41 @@ class InferenceRouter(
             Result.failure(e)
         }
     }
+}
+
+/** 推理调用的观察者，用于持久化执行记录 [FR-AI-04]。 */
+fun interface RouteObserver {
+    suspend fun onRouted(
+        result: RoutedResult,
+        startedAtMillis: Long,
+    )
+}
+
+/**
+ * 转换为 `ai_execution` 表的一行：位置、原因（含是否回退）、耗时、结果与错误码；不含任何用户内容。
+ * 错误实现了 [com.lingxi.core.model.ErrorCoded]（如网关错误）时记录其错误码，否则记录异常类名。
+ */
+fun RoutedResult.toExecution(
+    startedAtMillis: Long,
+    refId: String? = null,
+): com.lingxi.core.model.repository.AiExecution {
+    val location =
+        when {
+            finalRoute != null -> finalRoute.name
+            decision is RouteDecision.Run -> decision.primary.name
+            else -> "UNAVAILABLE"
+        }
+    val reason = (decision.reasons + listOfNotNull("主路线失败，已切换备用路线".takeIf { usedFallback })).joinToString("；")
+    val error = result.exceptionOrNull()
+    val code = (error as? com.lingxi.core.model.ErrorCoded)?.code ?: error?.let { it::class.simpleName ?: "ERROR" }
+    return com.lingxi.core.model.repository.AiExecution(
+        taskType = task.type.name,
+        location = location,
+        reason = reason,
+        startedAtMillis = startedAtMillis,
+        durationMs = latencyMs,
+        success = result.isSuccess,
+        errorCode = code,
+        refId = refId,
+    )
 }

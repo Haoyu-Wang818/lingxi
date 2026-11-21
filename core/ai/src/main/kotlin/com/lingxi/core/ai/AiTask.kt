@@ -38,6 +38,23 @@ enum class AiTaskType(
 
     /** 学习智能体的多步规划与工具调用。 */
     AGENT_PLANNING(onDeviceCapable = false, cloudCapable = true, heavy = true),
+
+    // 以下五类与 06-detailed-design.md 3.1 节、`ai_execution.task_type` 一致 [FR-AI-01]。
+
+    /** 板书文字识别：端侧优先，端侧置信度不足且用户允许上传时可上云。 */
+    OCR(onDeviceCapable = true, cloudCapable = true, heavy = false),
+
+    /** 课堂录音转写：只在端侧，音频不出手机（NFR-PRIV-01）。 */
+    ASR(onDeviceCapable = true, cloudCapable = false, heavy = false),
+
+    /** 识别文本 → 笔记、知识点与关系：只在云端（网关 `/v1/extract`）。 */
+    EXTRACT(onDeviceCapable = false, cloudCapable = true, heavy = true),
+
+    /** 知识点 → 复习卡片：只在云端（网关 `/v1/cards`）。 */
+    CARD_GEN(onDeviceCapable = false, cloudCapable = true, heavy = true),
+
+    /** 围绕笔记答疑：初赛只在云端，端侧备用留到复赛。 */
+    CHAT(onDeviceCapable = false, cloudCapable = true, heavy = true),
 }
 
 /**
