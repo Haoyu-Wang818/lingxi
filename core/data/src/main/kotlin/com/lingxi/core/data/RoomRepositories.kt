@@ -63,12 +63,15 @@ class RoomCardRepository(
         val allIds = kpIds + edges.flatMap { listOf(it.fromId, it.toId) }
         val points = knowledge.pointsByIds(allIds).associateBy { it.id }
         val courses = points.values.map { it.courseId }.toSet().associateWith { db.courseDao().byId(it)?.toModel() }
-        return rows.mapNotNull { row ->
+        val cards = rows.map { it.card.toModel() }
+        val captureIds = cards.mapNotNull { it.sourceRef?.captureId }.toSet()
+        val capturedAt = if (captureIds.isEmpty()) emptyMap() else db.captureDao().byIds(captureIds).associate { it.id to it.createdAt }
+        return rows.zip(cards).mapNotNull { (row, card) ->
             val point = points[row.card.kpId] ?: return@mapNotNull null
             val course = courses[point.courseId] ?: return@mapNotNull null
             val title = { id: String -> points[id]?.takeIf { it.deletedAt == null }?.title }
             StudyCard(
-                card = row.card.toModel(),
+                card = card,
                 course = course,
                 point = point.toModel(),
                 memory = row.memory?.toModel(),
@@ -82,6 +85,7 @@ class RoomCardRepository(
                         .filterNot { it.toId == point.id && it.relation == RelationType.PREREQUISITE.name }
                         .mapNotNull { title(if (it.fromId == point.id) it.toId else it.fromId) }
                         .distinct(),
+                capturedAtMillis = card.sourceRef?.captureId?.let { capturedAt[it] },
             )
         }
     }
