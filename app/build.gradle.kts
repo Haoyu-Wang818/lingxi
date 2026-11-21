@@ -15,6 +15,11 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
+        // ONNX Runtime 自带四种 CPU 架构的本地库；手机只需 ARM，x86_64 留给 Intel 电脑上的模拟器，去掉 32 位 x86。
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
+
         // 开发期默认连 Mac 本机网关；真机调试时用 -PgatewayUrl=http://<Mac 局域网 IP>:8000 覆盖。
         val gatewayUrl = (project.findProperty("gatewayUrl") as String?) ?: "http://10.0.2.2:8000"
         buildConfigField("String", "GATEWAY_URL", "\"$gatewayUrl\"")
@@ -38,6 +43,8 @@ dependencies {
     implementation(project(":core:ai"))
     implementation(project(":core:data"))
     implementation(project(":core:network"))
+    implementation(project(":core:ondevice"))
+    implementation(project(":core:quality"))
     implementation(project(":core:review"))
     implementation(project(":context-engine"))
     implementation(project(":core:sync"))
@@ -54,6 +61,7 @@ dependencies {
     implementation(project(":feature:settings"))
 
     implementation(libs.datastore.preferences)
+    implementation(libs.work.runtime)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)

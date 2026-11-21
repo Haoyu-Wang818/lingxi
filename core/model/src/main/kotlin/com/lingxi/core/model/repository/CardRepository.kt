@@ -102,6 +102,9 @@ interface CardRepository {
         nowMillis: Long,
     )
 
+    /** 来源属于这些捕获的卡片数，笔记详情显示「本节生成 N 张卡片」。 */
+    suspend fun countFromCaptures(captureIds: Set<String>): Int
+
     /** 卡片总数（不含已删除），用于判断是否需要写入种子数据。 */
     suspend fun cardCount(): Int
 

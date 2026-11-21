@@ -1,5 +1,6 @@
 package com.lingxi.app.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,10 +11,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CameraAlt
-import androidx.compose.material.icons.outlined.Mic
-import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,48 +22,97 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.lingxi.app.ui.SampleData
+import com.lingxi.core.model.Course
+import com.lingxi.core.model.repository.NoteStatus
+import com.lingxi.core.model.repository.NoteSummary
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+/** 一张照片在流水线中的进度。 */
+data class CaptureProgress(
+    val id: String,
+    val label: String,
+    val stage: String,
+    val done: Boolean = false,
+    val failed: Boolean = false,
+)
 
 /**
- * 课堂捕获页：拍板书、录音、导入课件，并列出已生成的笔记。
- * 原型阶段按钮尚未接入 CameraX 与录音，P1 阶段实现。
+ * 课堂捕获页：选择课程（上课时间内自动预选正在上的课）、拍板书或相册导入，查看整理进度与笔记列表
+ * [FR-CAP-01]、[FR-CAP-03]、[FR-COURSE-03]、[FR-NOTE-06]。
  */
 @Composable
 fun CaptureScreen(
+    courses: List<Course>,
+    selectedCourseId: String?,
+    onSelectCourse: (String) -> Unit,
+    progress: List<CaptureProgress>,
+    notes: List<NoteSummary>,
+    onCamera: () -> Unit,
+    onOpenNote: (String) -> Unit,
+    onRetry: (String) -> Unit,
     onOpenCourses: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("课堂捕获", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
             TextButton(onClick = onOpenCourses) { Text("课程与课表") }
             TextButton(onClick = onOpenSettings) { Text("设置") }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CaptureButton("拍板书", Icons.Outlined.CameraAlt)
-            CaptureButton("录音", Icons.Outlined.Mic)
-            CaptureButton("导入课件", Icons.Outlined.PictureAsPdf)
+        if (courses.isEmpty()) {
+            Text("先在「课程与课表」里添加课程。", color = MaterialTheme.colorScheme.outline)
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                courses.take(4).forEach { c ->
+                    FilterChip(selected = c.id == selectedCourseId, onClick = { onSelectCourse(c.id) }, label = { Text(c.name) })
+                }
+            }
+        }
+        FilledTonalButton(onClick = onCamera, enabled = selectedCourseId != null, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Outlined.CameraAlt, contentDescription = null)
+            Text("拍板书 / 相册导入", Modifier.padding(start = 8.dp))
+        }
+        progress.forEach { p ->
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                    Text(p.label, style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        p.stage,
+                        color = if (p.failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+            }
         }
         Text("最近笔记", style = MaterialTheme.typography.titleMedium)
+        if (notes.isEmpty()) Text("还没有笔记，拍一张板书试试。", color = MaterialTheme.colorScheme.outline)
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(SampleData.notes) { note ->
-                Card(Modifier.fillMaxWidth()) {
-                    Text(note, Modifier.padding(16.dp))
+            items(notes, key = { it.lessonId }) { note ->
+                Card(Modifier.fillMaxWidth().clickable { onOpenNote(note.lessonId) }) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("${note.courseName} · ${note.title}", style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                "${DATE.format(Date(note.updatedAtMillis))} · 板书 ${note.captureCount} 张 · ${statusLabel(note.status)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
+                        if (note.status != NoteStatus.READY) TextButton(onClick = { onRetry(note.lessonId) }) { Text("重试") }
+                    }
                 }
             }
         }
     }
 }
 
-@Composable
-private fun CaptureButton(
-    label: String,
-    icon: ImageVector,
-) {
-    FilledTonalButton(onClick = { /* P1：接入 CameraX / 录音 / 文件选择 */ }) {
-        Icon(icon, contentDescription = null)
-        Text(label, Modifier.padding(start = 4.dp))
+private fun statusLabel(status: NoteStatus) =
+    when (status) {
+        NoteStatus.READY -> "已整理"
+        NoteStatus.PENDING -> "待整理（联网后自动补做）"
+        NoteStatus.FAILED -> "整理失败"
     }
-}
+
+private val DATE = SimpleDateFormat("M月d日 HH:mm", Locale.CHINA)

@@ -194,6 +194,9 @@ interface CardDao {
     @Query("SELECT COUNT(*) FROM card WHERE status != 'DELETED'")
     suspend fun count(): Int
 
+    @Query("SELECT source_ref_json FROM card WHERE status != 'DELETED' AND source_ref_json IS NOT NULL")
+    suspend fun sourceRefs(): List<String>
+
     @Query("SELECT * FROM card WHERE id = :id")
     suspend fun byId(id: String): CardEntity?
 

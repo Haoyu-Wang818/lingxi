@@ -153,5 +153,7 @@ class CaptureRepositoryTest : DbTestBase() {
             val due = repo.dueQueue(t0, 10).associateBy { it.card.id }
             assertEquals(t0 - 5 * hour, due.getValue("c1").capturedAtMillis)
             assertNull(due.getValue("c2").capturedAtMillis) // c2 的来源 cap-1 不在 capture 表中
+            assertEquals(1, repo.countFromCaptures(setOf("cap-x")))
+            assertEquals(0, repo.countFromCaptures(emptySet()))
         }
 }

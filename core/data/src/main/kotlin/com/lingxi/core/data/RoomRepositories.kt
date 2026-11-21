@@ -137,6 +137,9 @@ class RoomCardRepository(
 
     override suspend fun cardCount(): Int = cards.count()
 
+    override suspend fun countFromCaptures(captureIds: Set<String>): Int =
+        if (captureIds.isEmpty()) 0 else cards.sourceRefs().count { sourceRefFromJson(it).captureId in captureIds }
+
     override suspend fun memory(cardId: String): CardMemory? = cards.memory(cardId)?.toModel()
 
     override suspend fun countedReviewsSince(sinceMillis: Long): Int = logs.countedSince(sinceMillis)
