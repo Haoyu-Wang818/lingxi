@@ -22,6 +22,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:designsystem"))
     implementation(project(":core:data"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

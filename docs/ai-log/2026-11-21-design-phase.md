@@ -36,9 +36,9 @@
 
 ## 人工复核点
 
-- 模块依赖是否与架构图一致：feature 模块目前未依赖 `core:designsystem`（图中无此边），I3 统一视觉时需在架构图补边。
+- 模块依赖是否与架构图一致：评审后已在架构图补上全部 feature → `core:designsystem` 以及 `feature:course`、`feature:settings` → `core:data` 的边，并同步到 Gradle 依赖。
 - `ReviewCard` 新字段与数据库 `card` 表（`options_json` 含正确项下标）的映射方式。
 - `PushSettings` 默认值（每日 3 次、间隔 120 分钟、两个静音段）与问卷结论是否一致。
 - `GatewayError` 中 422 `LLM_INVALID_OUTPUT` 标记为可重试（进入待办队列）是否符合预期。
 - `scripts/trace.py` 会把占位页面也计为「代码」引用，评审追溯矩阵时注意区分骨架与实现。
-- `CLAUDE.md` 的模块表尚未补充新模块，建议同步更新。
+- `CLAUDE.md` 的模块表已补充新模块，Data Layer 规则改为与 ADR 0007 一致。

@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
  * 灵犀学伴的统一主题（NFR-UX）。
  *
  * 骨架阶段只区分明暗两套 Material 3 配色；05-ui.md 的视觉规范（配色、字号、卡片组件、翻面动画）
- * 在 I3 迭代落地，届时各 feature 模块改为依赖本模块。
+ * 在 I3 迭代落地；各 feature 模块均依赖本模块。
  */
 @Composable
 fun LingxiTheme(

@@ -105,6 +105,16 @@ fgraph --> data
 fctx --> ctx
 fctx --> notify
 fctx --> sync
+ftoday --> ds
+freview --> ds
+fcapture --> ds
+fnote --> ds
+fgraph --> ds
+fcourse --> ds
+fctx --> ds
+fset --> ds
+fcourse --> data
+fset --> data
 dl --> sync
 app --> dl
 wear --> dl
@@ -123,7 +133,7 @@ ctx --> model
 
 | 模块 | 类型 | 状态 | 职责 | 实现的需求 |
 | --- | --- | --- | --- | --- |
-| `core:model` | JVM | 已有，需扩展 | 领域模型：课程、捕获、笔记、知识点、关系、卡片（新增 `watchPrompt`、`watchAnswer`、`sourceRef`、挖空题型）、记忆状态、复习日志 | 全部 |
+| `core:model` | JVM | 已有，需扩展 | 领域模型：课程、捕获、笔记、知识点、关系、卡片（新增 `watchPrompt`、`watchAnswer`、`sourceRef`、挖空题型）、记忆状态、复习日志；知识抽取结果 `Extraction` 等跨模块共享类型 | 全部 |
 | `core:review` | JVM | 已有，需扩展 | FSRS 调度；四档下次间隔预测；每日队列与上限；短组与组内回炉；图谱感知排序；考前模式 | FR-REV-02、03、07、14、15、16 |
 | `core:quality` | JVM | **新增** | 卡片与手表版本的规则校验（长度、答案唯一、干扰项、相关性）；知识关系校验（自环、端点、先修环） | FR-REV-10、FR-WEAR-08、FR-KG-03 |
 | `core:ai` | JVM | 已有 | 任务分类、路由策略、`InferenceRouter`、失败切换、执行记录 | FR-AI-01 至 04 |
@@ -220,6 +230,7 @@ WorkManager 每 15 分钟（系统最小周期）+ 活动识别变化时触发 �
 2. `ReviewCard` 增加字段与 `CardType.CLOZE`，`Rating` 不变。
 3. 新建 `core:data`、`core:network`、`core:ondevice`、`core:notify`、`core:quality`、`core:designsystem`、`sync-datalayer`。
 4. `docs/architecture.md` 精简为指向本文档的摘要。
+5. `Extraction`、`ExtractedPoint`、`ScoredEdge` 等类型放在 `core:model`：网关客户端、质量校验与仓库层都要使用，放在其他 core 模块会造成 core 模块之间互相依赖。
 
 ## 9. 待决策（将形成 ADR）
 

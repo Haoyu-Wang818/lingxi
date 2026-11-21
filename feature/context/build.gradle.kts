@@ -22,6 +22,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:designsystem"))
     implementation(project(":context-engine"))
     implementation(project(":core:notify"))
     implementation(project(":core:sync"))
